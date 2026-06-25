@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f9f9f9" />
+<title>Evolve Fitness App</title>
+<style>
+  @font-face{font-family:'Inter';font-weight:400;font-display:swap;src:url('Inter-400.woff2') format('woff2')}
+  @font-face{font-family:'Inter';font-weight:500;font-display:swap;src:url('Inter-500.woff2') format('woff2')}
+  @font-face{font-family:'Inter';font-weight:700;font-display:swap;src:url('Inter-700.woff2') format('woff2')}
+  @font-face{font-family:'Inter';font-weight:800;font-display:swap;src:url('Inter-800.woff2') format('woff2')}
+
+  :root{
+    /* Kinetic Light — tokens exacts (DESIGN.md Stitch) */
+    --bg:#f9f9f9; --card:#ffffff; --surface-low:#f3f3f3; --surface-container:#eeeeee;
+    --surface-high:#e8e8e8; --surface-dim:#dadada;
+    --ink:#1a1c1c; --muted:#5f5e5e; --on-variant:#444932;
+    --line:#e8e8e8; --outline:#757a60; --outline-variant:#c5c9ac;
+    --neon:#d4ff00; --neon-dim:#b0d500; --tert:#d6fe28;
+    --primary:#536600; --on-pc:#5f7400;   /* texte sombre POSÉ SUR le néon */
+    --accent:#536600;                      /* vert d'accent (texte/icône) sur le fond */
+    --dark:#1a1c1c; --danger:#ba1a1a;
+    --r-lg:24px; --r-md:16px; --r-sm:12px;
+    --shadow:0 4px 20px rgba(0,0,0,.04);
+    --shadow-hi:0 10px 30px rgba(0,0,0,.08);
+  }
+  /* ====== THÈME SOMBRE — Kinetic Performance (tokens Stitch) ====== */
+  [data-theme="dark"]{
+    --bg:#0a0a0a; --card:#161616; --surface-low:#1c1b1b; --surface-container:#242424;
+    --surface-high:#2e2e2e; --surface-dim:#2a2a2a;
+    --ink:#e9e7e4; --muted:#9b9d92; --on-variant:#c5c9ac;
+    --line:#2a2a2a; --outline:#6f7460; --outline-variant:#3a3f2c;
+    --accent:#c2e600;        /* vert clair lisible sur fond sombre */
+    --dark:#161616;          /* surface des cartes "feature" en sombre */
+    --shadow:none;
+    --shadow-hi:0 10px 30px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; min-height:100%}
+  body{
+    color:var(--ink); font-size:16px; line-height:1.6; background:var(--bg);
+    font-family:'Inter',"Segoe UI",-apple-system,Roboto,sans-serif;
+    padding-bottom:env(safe-area-inset-bottom); -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+  }
+  .bgfx{display:none}
+  .hidden{display:none !important}
+  .muted{color:var(--muted)}
+  .ok{color:var(--accent); font-weight:700}
+
+  /* ---- Icônes ---- */
+  .icn{width:22px;height:22px;display:block}
+  .mi{width:16px;height:16px;vertical-align:-3px;margin-right:6px;color:var(--muted)}
+
+  /* ---- Typo système ---- */
+  .display-metric{font-weight:800; letter-spacing:-.04em; line-height:1; font-variant-numeric:tabular-nums}
+  .hl{font-size:clamp(26px,7.5vw,32px); font-weight:800; letter-spacing:-.03em; line-height:1.12; margin:0}
+  .hm{font-size:20px; font-weight:700; letter-spacing:-.02em; margin:0}
+  .bd{font-size:16px; line-height:1.55}
+  .lblb{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase}
+  .seclabel{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 4px 12px}
+
+  /* ---- Header ---- */
+  header{
+    position:sticky; top:0; z-index:5; backdrop-filter:blur(14px);
+    background:rgba(249,249,249,.82); box-shadow:0 1px 0 rgba(0,0,0,.04);
+    padding:12px 16px; padding-top:max(12px,env(safe-area-inset-top));
+    display:flex; align-items:center; gap:12px;
+  }
+  .avatar{width:42px; height:42px; border-radius:50%; flex:none; background:var(--surface-high);
+    display:flex; align-items:center; justify-content:center; overflow:hidden; color:var(--primary)}
+  .avatar svg{width:24px; height:24px}
+  header .brand{flex:1; display:flex; flex-direction:column; line-height:1.05}
+  header .brand b{font-size:20px; font-weight:800; letter-spacing:-.03em; color:var(--ink)}
+  header .brand small{font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--neon-dim)}
+  .iconbtn{width:42px; height:42px; border-radius:50%; background:transparent; border:none;
+    display:flex; align-items:center; justify-content:center; padding:0; color:var(--accent); cursor:pointer; transition:background .15s, transform .08s}
+  .iconbtn:hover{background:var(--surface-high)}
+  .iconbtn:active{transform:scale(.92)}
+  .iconbtn svg{width:23px; height:23px}
+
+  main{padding:20px 16px 40px; max-width:680px; margin:0 auto}
+
+  /* ---- Welcome ---- */
+  .welcome{margin:6px 4px 22px}
+  .welcome .hl{margin-bottom:6px}
+  .welcome p{margin:0; color:var(--muted); font-size:16px}
+  .welcome p b{color:var(--primary)}
+
+  /* ---- Boutons ---- */
+  button{font:inherit; font-weight:700; color:var(--ink); border-radius:var(--r-sm);
+    background:var(--card); border:1px solid var(--line); padding:13px 16px; cursor:pointer;
+    min-height:50px; transition:transform .08s, filter .15s, background .15s}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--neon); color:var(--ink); border:none; font-weight:800; letter-spacing:.01em;
+    box-shadow:0 8px 20px rgba(212,255,0,.32)}
+  button.primary:hover{filter:brightness(1.04)}
+  button.hard{background:var(--ink); color:#fff; border:none; font-weight:700}
+  button.ghost{background:transparent; border:1px solid var(--line)}
+  button.sm{min-height:42px; padding:9px 14px; font-size:14px; border-radius:10px}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+
+  /* ---- Cartes ---- */
+  .card{background:var(--card); border:none; border-radius:var(--r-lg); padding:20px; margin:16px 0; box-shadow:var(--shadow)}
+  .cardhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px}
+  .cardhead .ic{color:var(--accent)} .cardhead .ic svg{width:22px; height:22px}
+  .pillneon{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--primary); background:var(--neon); padding:5px 12px; border-radius:999px}
+
+  #viewHome{padding-bottom:96px}
+
+  /* ---- Graphe assiduité (barres) ---- */
+  .bars{display:flex; align-items:flex-end; justify-content:space-between; gap:8px; height:150px; padding:0 2px}
+  .barcol{display:flex; flex-direction:column; align-items:center; gap:10px; flex:1; height:100%; justify-content:flex-end}
+  .bartrack{position:relative; width:100%; max-width:34px; flex:1; display:flex; align-items:flex-end}
+  .bar{width:100%; border-radius:4px 4px 0 0; background:var(--surface-container); transition:height .4s ease}
+  .bar.part{background:var(--neon-dim)}
+  .bar.full{background:var(--neon)}
+  .barlbl{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+
+  /* ---- Carte protocole (sombre) ---- */
+  .protocol{position:relative; overflow:hidden; background:var(--dark); color:#fff;
+    border-radius:var(--r-lg); padding:22px; margin:16px 0; box-shadow:var(--shadow)}
+  .protocol .glow{position:absolute; top:-60px; right:-50px; width:200px; height:200px; border-radius:50%;
+    background:var(--neon); opacity:.18; filter:blur(46px); pointer-events:none}
+  .prot-top{position:relative; z-index:2; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:18px}
+  .prot-label{display:block; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--neon); margin-bottom:6px}
+  .prot-name{font-size:28px; font-weight:800; letter-spacing:-.03em; line-height:1.08; margin:0; color:#fff}
+  .prot-week{margin:6px 0 0; font-size:13px; color:rgba(255,255,255,.6)}
+  .prot-ic{color:var(--neon); flex:none} .prot-ic svg{width:26px; height:26px}
+  .prot-meta{position:relative; z-index:2; display:flex; flex-direction:column; gap:11px; margin-bottom:22px}
+  .prot-meta span{display:flex; align-items:center; gap:10px; font-size:14px; color:rgba(255,255,255,.82)}
+  .prot-meta svg{width:18px; height:18px; color:rgba(255,255,255,.55)}
+  .prot-start{position:relative; z-index:2; width:100%; min-height:56px; background:var(--neon); color:var(--ink);
+    border:none; border-radius:var(--r-sm); font-size:14px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer; transition:filter .15s, transform .08s}
+  .prot-start:hover{filter:brightness(1.05)} .prot-start:active{transform:scale(.98)}
+  .prot-start svg{width:20px; height:20px; fill:var(--ink)}
+
+  /* ---- Carte avancement (anneau) ---- */
+  .progwrap{display:flex; align-items:center; gap:20px}
+  .ring{width:120px; height:120px; flex:none}
+  .ring .rk{stroke:var(--surface-container)}
+  .ring .rp{stroke:var(--neon)}
+  .ring .rv{fill:var(--ink)}
+  .progside{flex:1; display:flex; flex-direction:column; gap:14px}
+  .ministat{display:flex; flex-direction:column; gap:2px}
+  .ministat .ms-v{font-size:24px; font-weight:800; letter-spacing:-.02em}
+  .ministat .ms-k{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+  .goalrow{display:flex; justify-content:space-between; align-items:center; margin:20px 0 8px; font-size:14px; color:var(--muted)}
+  .goalrow b{color:var(--ink); font-weight:800}
+  .flatbar{height:5px; background:var(--surface-container); border-radius:999px; overflow:hidden}
+  .flatbar>i{display:block; height:100%; background:var(--neon); border-radius:999px; transition:width .4s ease}
+
+  /* ---- Empty state ---- */
+  .empty{position:relative; overflow:hidden; background:var(--dark); color:#fff; border-radius:var(--r-lg); padding:24px; margin:16px 0; box-shadow:var(--shadow)}
+  .empty .glow{position:absolute; top:-60px; right:-50px; width:200px; height:200px; border-radius:50%; background:var(--neon); opacity:.16; filter:blur(46px)}
+  .empty .prot-label{color:var(--neon)} .empty h3{position:relative; z-index:2; font-size:24px; font-weight:800; letter-spacing:-.02em; margin:0 0 8px}
+  .empty p{position:relative; z-index:2; margin:0 0 18px; color:rgba(255,255,255,.7); font-size:14px}
+
+  /* ---- Tuiles actions rapides ---- */
+  .tiles{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:0 0 8px}
+  .tile{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center;
+    min-height:auto; padding:18px 12px; background:var(--card); border:none; border-radius:var(--r-md); box-shadow:var(--shadow)}
+  .tile .ic svg{width:26px; height:26px; color:var(--accent)}
+  .tile.accent .ic svg{color:var(--ink)}
+  .tile.accent{background:var(--neon)}
+  .tile b{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase}
+  .tile span{display:none}
+
+  .err{background:#fdecec; border:1px solid #f1b6b6; color:#b62b2b; padding:12px; border-radius:var(--r-sm); margin:12px 0}
+
+  /* ---- Tabbar ---- */
+  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:6; display:flex; justify-content:space-around;
+    background:rgba(255,255,255,.94); backdrop-filter:blur(14px); box-shadow:0 -4px 20px rgba(0,0,0,.05);
+    border-radius:var(--r-lg) var(--r-lg) 0 0; padding:10px 8px max(10px,env(safe-area-inset-bottom))}
+  .tabbar button{background:none; border:none; box-shadow:none; min-height:auto; padding:7px 16px;
+    display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.03em; border-radius:999px}
+  .tabbar button .ti svg{width:23px; height:23px; display:block}
+  .tabbar button.on{color:var(--primary); background:var(--neon)}
+
+  /* ---- Programme (arbre) ---- */
+  .week{background:var(--card); border:none; border-radius:var(--r-lg); margin:14px 0; overflow:hidden; box-shadow:var(--shadow)}
+  .week>summary{font-size:18px; font-weight:800; letter-spacing:-.01em; padding:18px 20px; cursor:pointer; list-style:none; display:flex; align-items:center}
+  .week>summary::-webkit-details-marker{display:none}
+  .week>summary::before{content:"›"; color:var(--neon-dim); margin-right:10px; font-size:20px; font-weight:800; transition:transform .15s}
+  .week[open]>summary::before{transform:rotate(90deg)}
+  .session{border-top:1px solid var(--line); padding:16px 20px}
+  .session .shead{display:flex; align-items:center; gap:10px}
+  .session .shead .title{flex:1; font-weight:800}
+  .ex-line{display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line)}
+  .ex-line .ord{width:30px; height:30px; flex:none; border-radius:9px; background:var(--surface-low); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:var(--muted)}
+  .ex-line.done .ord{background:var(--neon); color:var(--ink)}
+  .ex-line .nm{flex:1}
+  .ex-line .sub{font-size:13px; color:var(--muted)}
+  .pill{font-size:12px; padding:5px 12px; border-radius:999px; color:var(--primary); font-weight:800; background:var(--neon)}
+  .prog{height:6px; background:var(--surface-container); border-radius:999px; overflow:hidden; margin-top:12px}
+  .prog>i{display:block; height:100%; background:var(--neon)}
+
+  /* ---- Séance : barre haute + durée ---- */
+  .subbar{display:flex; justify-content:space-between; align-items:center; margin:4px 0 8px}
+  .backpill{display:flex; align-items:center; gap:8px; min-height:auto; padding:9px 15px; border-radius:var(--r-sm);
+    background:var(--surface-low); border:none; color:var(--muted); font-weight:700; font-size:12px; letter-spacing:.05em; text-transform:uppercase}
+  .backpill svg{width:18px; height:18px}
+  .pill.chk{display:inline-flex; align-items:center; gap:6px; padding:8px 14px; color:var(--primary); background:var(--neon)}
+  .pill.chk svg{width:16px; height:16px}
+  .duration{text-align:center; margin:8px 0 18px}
+  .duration .k{font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--muted)}
+  .duration .v{font-size:clamp(46px,15vw,64px); font-weight:800; letter-spacing:-.03em; line-height:1; font-variant-numeric:tabular-nums; margin-top:4px}
+  #sessTitle{font-size:24px; font-weight:800; letter-spacing:-.02em; margin:0 0 6px}
+  #exPicker .sub2{color:var(--muted); font-size:14px; margin:0 0 16px}
+
+  /* ---- Cartes exercice (picker) ---- */
+  .exrow{background:var(--card); border-radius:var(--r-lg); padding:20px; box-shadow:var(--shadow); margin:14px 0; cursor:pointer; transition:transform .1s; border:2px solid transparent}
+  .exrow:active{transform:scale(.985)}
+  .exrow.cur{border-color:var(--neon)}
+  .exrow .exhead{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px}
+  .exnum{width:40px; height:40px; border-radius:11px; background:var(--surface-container); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--muted)}
+  .exrow.cur .exnum{background:var(--neon); color:var(--primary)}
+  .excat{font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 10px; border-radius:999px; background:var(--surface-low); color:var(--accent)}
+  .excat.sup{background:var(--neon); color:var(--primary)}
+  .exrow h3{font-size:20px; font-weight:700; letter-spacing:-.01em; margin:0 0 16px; color:var(--ink)}
+  .exsr{display:flex; justify-content:space-between; font-size:14px; margin-bottom:12px}
+  .exsr .k{color:var(--muted)} .exsr .v{font-weight:800}
+  .ptrack{height:5px; background:var(--surface-container); border-radius:999px; overflow:hidden}
+  .pfill{height:5px; background:var(--neon)}
+  .exstat{display:flex; justify-content:space-between; font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-top:12px; color:var(--muted)}
+  .exstat.act{color:var(--accent)}
+
+  /* ---- Détail exercice ---- */
+  .musfig{position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--surface-low); border-radius:var(--r-md); overflow:hidden; margin:0 0 16px; min-height:150px}
+  .musfig .musinfo{padding:18px; display:flex; flex-direction:column; gap:5px; z-index:1}
+  .musfig .musinfo .k{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .musfig .musinfo b{font-size:19px; font-weight:700; letter-spacing:-.01em; color:var(--ink)}
+  .musfig img{height:150px; width:44%; object-fit:contain; object-position:center; flex:none}
+  #exName{font-size:22px; font-weight:700; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 4px}
+  .expos{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--primary); background:var(--neon); padding:5px 12px; border-radius:999px; display:inline-block; margin:0 0 10px}
+  .exinfo{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0}
+  .exinfo .r{display:flex; justify-content:space-between; align-items:center; background:var(--surface-low); border-radius:14px; padding:12px 14px}
+  .exinfo .r .k{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted)}
+  .exinfo .r .v{font-size:20px; font-weight:800}
+  .exmeta2{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 2px}
+  .exmeta2 span{background:var(--surface-low); color:var(--muted); font-size:12px; font-weight:600; padding:5px 11px; border-radius:999px}
+  #exNotes{color:var(--muted); font-size:13px; margin-top:12px}
+
+  /* ---- Lignes de série ---- */
+  .setrow{display:flex; align-items:center; gap:14px; padding:14px 16px; border:2px solid transparent; border-radius:var(--r-md); margin:10px 0; background:var(--surface-low)}
+  .setrow .setno{width:26px; flex:none; font-size:15px; font-weight:800; color:var(--muted); text-align:center}
+  .setrow .setdata{flex:1; display:flex; gap:18px}
+  .setrow .setdata .sd-w{font-weight:800} .setrow .setdata .sd-r{color:var(--muted); font-weight:600}
+  .setrow .cb{width:46px; height:46px; flex:none; border-radius:50%; border:2px solid #cdd3c4; background:#fff; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:background .15s, border-color .15s}
+  .setrow .cb svg{width:22px; height:22px}
+  .setrow.checked{background:#eef9c2; border-color:var(--neon)}
+  .setrow.checked .cb{background:var(--neon); border-color:var(--neon); color:var(--ink)}
+  .navbar{display:flex; gap:10px; margin-top:18px}
+  .navbar button{flex:1}
+
+  /* ---- Timer de repos ---- */
+  .timer{position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; padding:34px 24px; text-align:center; background:var(--bg)}
+  .timer .rst-head{display:flex; flex-direction:column; align-items:center; gap:6px}
+  .rst-pill{font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--primary); background:var(--neon); padding:6px 16px; border-radius:999px}
+  .rst-title{font-size:30px; font-weight:800; letter-spacing:-.02em; color:var(--ink); margin:6px 0 0; line-height:1.2}
+  .rst-sub{font-size:14px; color:var(--muted); margin:0}
+  .rst-ring{position:relative; width:284px; height:284px; max-width:74vw; max-height:74vw; display:flex; align-items:center; justify-content:center}
+  .rst-svg{position:absolute; inset:0; width:100%; height:100%}
+  .rst-svg .prog{transition:stroke-dashoffset .9s linear}
+  .rst-center{display:flex; flex-direction:column; align-items:center; z-index:1}
+  .timer .big{font-size:clamp(48px,16vw,66px); font-weight:800; font-variant-numeric:tabular-nums; line-height:1; color:var(--ink); letter-spacing:-.02em}
+  .rst-rem{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:8px}
+  .rst-adj{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; width:100%; max-width:380px}
+  .rst-adj button{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:66px; background:var(--card); color:var(--ink); border:none; border-radius:var(--r-md); box-shadow:var(--shadow); font-size:18px; font-weight:800; cursor:pointer}
+  .rst-adj button svg{width:22px; height:22px; stroke:var(--muted); fill:none}
+  .rst-adj button small{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+  .rst-main{display:flex; flex-direction:column; gap:12px; width:100%; max-width:380px}
+  .rst-main button{display:flex; align-items:center; justify-content:center; gap:10px; min-height:60px; border:none; border-radius:var(--r-md); font-size:18px; font-weight:800; letter-spacing:-.01em; cursor:pointer}
+  .rst-main button svg{width:20px; height:20px; stroke:none}
+  .rst-pause{background:var(--dark); color:#fff; box-shadow:0 8px 20px rgba(26,28,28,.22)}
+  .rst-pause svg{fill:#fff}
+  .rst-skip{background:var(--neon); color:var(--ink); box-shadow:0 6px 18px rgba(212,255,0,.35)}
+  .rst-skip svg{fill:var(--ink)}
+  .timer.flash{animation:flash .45s ease 0s 4}
+  @keyframes flash{0%,100%{filter:none} 50%{filter:brightness(1.5)}}
+
+  /* ---- Réglages ---- */
+  .toggle{display:flex; align-items:center; gap:12px; justify-content:space-between; padding:10px 0}
+  .switch{width:54px; height:32px; border-radius:999px; background:var(--surface-dim); border:none; position:relative; flex:none; transition:background .15s}
+  .switch.on{background:var(--neon)}
+  .switch i{position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 3px rgba(0,0,0,.18)}
+  .switch.on i{left:25px}
+  footer{color:var(--muted); font-size:12px; text-align:center; padding:24px}
+
+  /* ====== Ajustements structurels du THÈME SOMBRE ======
+     En sombre, la profondeur se fait par bordures fines (pas d'ombres) — cf. DESIGN.md */
+  [data-theme="dark"] .card,
+  [data-theme="dark"] .week,
+  [data-theme="dark"] .tile,
+  [data-theme="dark"] .exrow,
+  [data-theme="dark"] .protocol,
+  [data-theme="dark"] .empty,
+  [data-theme="dark"] .rst-adj button{ border:1px solid var(--line); }
+  [data-theme="dark"] .tile.accent{ border-color:transparent; }
+  [data-theme="dark"] header{ background:rgba(10,10,10,.82); box-shadow:0 1px 0 rgba(255,255,255,.06); }
+  [data-theme="dark"] .tabbar{ background:rgba(18,18,18,.92); box-shadow:0 -4px 24px rgba(0,0,0,.6); }
+  [data-theme="dark"] .musfig{ background:var(--surface-container); }
+  /* Timer de repos : valeur + anneau lumineux néon */
+  [data-theme="dark"] .timer .big{ color:var(--neon); text-shadow:0 0 22px rgba(212,255,0,.45); }
+  [data-theme="dark"] .rst-svg .prog{ filter:drop-shadow(0 0 5px rgba(212,255,0,.55)); }
+  [data-theme="dark"] .rst-pause{ background:var(--surface-container); border:1px solid var(--line); }
+  /* Lignes de série */
+  [data-theme="dark"] .setrow .cb{ border-color:var(--outline); background:transparent; color:var(--muted); }
+  [data-theme="dark"] .setrow.checked{ background:rgba(212,255,0,.12); border-color:var(--neon); }
+  [data-theme="dark"] .setrow.checked .cb{ background:var(--neon); border-color:var(--neon); color:#1a1c1c; }
+  /* Divers */
+  [data-theme="dark"] .switch{ background:var(--surface-high); }
+  [data-theme="dark"] .err{ background:rgba(255,90,90,.12); border-color:rgba(255,120,120,.35); color:#ffb4ab; }
+</style>
+</head>
+<body>
+<header>
+  <div class="avatar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg></div>
+  <div class="brand"><b>Evolve</b><small>Fitness App</small></div>
+  <button class="iconbtn" id="btnTheme" title="Thème clair / sombre" aria-label="Basculer le thème clair ou sombre"></button>
+  <button class="iconbtn" id="btnSettings" title="Réglages" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</header>
+
+<main>
+  <!-- HOME -->
+  <section id="viewHome">
+    <section class="welcome">
+      <h1 class="hl" id="greetTitle">Salut Aymeric</h1>
+      <p id="homeStatus"></p>
+    </section>
+    <div id="dash"></div>
+    <div class="seclabel" style="margin-top:30px">Actions rapides</div>
+    <div class="tiles">
+      <button class="tile accent" id="btnLoad"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><b>Charger</b><span>Fichier .xlsx</span></button>
+      <button class="tile" id="btnTemplate"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></span><b>Template</b><span>Excel vide</span></button>
+      <button class="tile" id="btnProgramJump"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg></span><b>Programme</b><span>Toutes les séances</span></button>
+      <button class="tile" id="btnResetProg"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 5v4h4"/></svg></span><b>Réinitialiser</b><span>Progression à zéro</span></button>
+    </div>
+    <input id="fileInput" type="file" accept=".xlsx" class="hidden" />
+    <div id="loadErr"></div>
+    <div class="seclabel" style="margin-top:30px">Programme complet</div>
+    <div id="programTree"></div>
+    <div class="hidden" id="homeActions"></div>
+  </section>
+
+  <!-- SESSION RUN -->
+  <section id="viewSession" class="hidden">
+    <div class="subbar">
+      <button class="backpill" id="btnBackHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Programme</button>
+      <span class="pill chk" id="sessProgress"></span>
+    </div>
+    <div class="duration"><div class="k">Durée</div><div class="v" id="sessClock">0:00</div></div>
+    <h2 id="sessTitle"></h2>
+
+    <!-- Liste d'exercices (ordre libre) -->
+    <div id="exPicker">
+      <p class="sub2">Choisis par quel exercice commencer (ordre libre) :</p>
+      <div id="exTiles"></div>
+    </div>
+
+    <!-- Exercice en cours -->
+    <div id="exDetail" class="hidden">
+      <div class="card">
+        <div class="musfig" id="exFig"></div>
+        <div class="expos" id="exPos"></div>
+        <h3 id="exName"></h3>
+        <p class="muted" id="exMeta"></p>
+        <div id="setList"></div>
+        <p class="muted" id="exNotes"></p>
+      </div>
+      <div class="navbar">
+        <button id="btnPrevEx">← Exercice préc.</button>
+        <button id="btnPickEx">Liste</button>
+        <button id="btnNextEx">Exercice suiv. →</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- TIMER overlay -->
+<div id="timer" class="timer hidden">
+  <div class="rst-head">
+    <span class="rst-pill">Repos</span>
+    <h2 class="rst-title" id="rstTitle">Récupération</h2>
+    <p class="rst-sub" id="rstSub">Reprends ton souffle</p>
+  </div>
+  <div class="rst-ring">
+    <svg class="rst-svg" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="45" fill="none" stroke="var(--surface-high)" stroke-width="3"/>
+      <circle id="rstRing" class="prog" cx="50" cy="50" r="45" fill="none" stroke="var(--neon)" stroke-width="4" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+    </svg>
+    <div class="rst-center">
+      <div class="big" id="timerVal">0:00</div>
+      <div class="rst-rem">Restant</div>
+    </div>
+  </div>
+  <div class="rst-adj">
+    <button id="tMinus">−15s</button>
+    <button id="tReset"><svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/></svg><small>Reset</small></button>
+    <button id="tPlus">+15s</button>
+  </div>
+  <div class="rst-main">
+    <button id="tPause" class="rst-pause"></button>
+    <button id="tSkip" class="rst-skip">Passer à la série suivante<svg viewBox="0 0 24 24"><path d="M6 5l9 7-9 7zM16 5h2.5v14H16z"/></svg></button>
+  </div>
+</div>
+
+<!-- SETTINGS overlay -->
+<div id="settings" class="timer hidden" style="background:rgba(18,22,12,.45); justify-content:flex-start; padding-top:80px">
+  <div class="card" style="width:100%; max-width:420px; text-align:left">
+    <h2 style="margin-top:0">Réglages</h2>
+    <div class="toggle">
+      <div><b>Garder l'écran allumé</b><br><small class="muted">Empêche la veille pendant une séance active.</small></div>
+      <div class="switch" id="swWake"><i></i></div>
+    </div>
+    <p class="muted" id="wakeNote" style="font-size:13px"></p>
+    <div class="row" style="margin-top:10px"><button class="primary" id="btnCloseSettings">Fermer</button></div>
+  </div>
+</div>
+
+<nav class="tabbar hidden" id="tabbar">
+  <button class="on" id="tabHome"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7M6 10v9h12v-9"/></svg></span>Accueil</button>
+  <button id="tabProg"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg></span>Programme</button>
+  <button id="tabSettings"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9l-2.1 2.1M4.9 19.1l2.1-2.1"/></svg></span>Réglages</button>
+</nav>
+
+<footer>100% local · aucune donnée ne quitte ton appareil · ouvre-le sur ton portable pour t'entraîner</footer>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   Fitness Coach — app HTML autonome (KAI build)
+   - 100% client-side, aucune requête réseau au runtime
+   - SheetJS vendu en local (xlsx.full.min.js)
+   - Persistance IndexedDB (programme courant + progression UNIQUEMENT)
+   ============================================================ */
+
+// Schéma EXACT partagé template <-> app (ne JAMAIS renommer/réordonner)
+const HEADERS = ["Semaine","Session","Ordre Exercice","Exercice","Sets","Reps",
+  "Poids Suggéré (kg)","Target RPE","Temps Repos (sec)","Notes"];
+
+const INSTRUCTIONS = [
+  ["Règles de progressive overload (référence agent fit)"],
+  [""],
+  ["2 leviers/semaine, un seul à la fois : poids +2-5% OU repos -5-10s OU reps +1 (jamais poids ET reps la même semaine)."],
+  ["Cycle 4 semaines : sem 1-3 progression linéaire ; sem 4 déload (volume -30/-40%, RPE en baisse)."],
+  ["Cohérence : composés lourds / repos long ; isolation léger / reps en hausse."],
+  ["RPE : 6-7 en sem 1, jusqu'à 8 en sem 2-3, 6 en déload."],
+  ["4-5 exercices max / session ; varier les angles ; éviter les sessions identiques."],
+];
+
+/* ---------- IndexedDB minimal (1 clé 'state') ---------- */
+const DB = (()=>{
+  let dbp;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise((res,rej)=>{
+      const r = indexedDB.open("fitnessCoach",1);
+      r.onupgradeneeded = ()=> r.result.createObjectStore("kv");
+      r.onsuccess = ()=> res(r.result);
+      r.onerror = ()=> rej(r.error);
+    });
+    return dbp;
+  }
+  async function get(k){ const db=await open(); return new Promise((res,rej)=>{ const t=db.transaction("kv").objectStore("kv").get(k); t.onsuccess=()=>res(t.result); t.onerror=()=>rej(t.error); }); }
+  async function set(k,v){ const db=await open(); return new Promise((res,rej)=>{ const t=db.transaction("kv","readwrite").objectStore("kv").put(v,k); t.onsuccess=()=>res(); t.onerror=()=>rej(t.error); }); }
+  return {get,set};
+})();
+
+/* ---------- State ---------- */
+let state = { program:null, progress:{}, settings:{keepAwake:true, theme:"light"} };
+// program = { weeks:[ {semaine, sessions:[ {session, key, exercises:[ {ordre,exercice,sets,reps,poids,rpe,repos,notes,key} ] } ] } ] }
+let cur = { sessionKey:null, exIndex:0 };
+
+async function persist(){ await DB.set("state", state); }
+async function boot(){
+  const s = await DB.get("state");
+  if(s){ state = Object.assign({program:null,progress:{},settings:{keepAwake:true,theme:"light"}}, s); }
+  applyTheme(state.settings.theme || "light");
+  renderHome();
+  applyWakeToggleUI();
+}
+
+/* ---------- Thème clair / sombre ---------- */
+const ICON_MOON = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z'/></svg>";
+const ICON_SUN  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='4'/><path d='M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4'/></svg>";
+function applyTheme(t){
+  const dark = (t === "dark");
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", dark ? "#0a0a0a" : "#f9f9f9");
+  const btn = $("btnTheme"); if(btn) btn.innerHTML = dark ? ICON_SUN : ICON_MOON;
+}
+
+/* ---------- Template Excel (génération in-app) ---------- */
+function buildTemplateWorkbook(){
+  const wb = XLSX.utils.book_new();
+  // Onglet Programme : en-têtes uniquement
+  const ws = XLSX.utils.aoa_to_sheet([HEADERS]);
+  ws["!cols"] = HEADERS.map(h=>({wch:Math.max(12, h.length+2)}));
+  ws["!freeze"] = {xSplit:0, ySplit:1, topLeftCell:"A2", activePane:"bottomLeft", state:"frozen"};
+  ws["!autofilter"] = {ref:"A1:"+XLSX.utils.encode_col(HEADERS.length-1)+"1"};
+  // gras + fond léger sur l'en-tête
+  for(let c=0;c<HEADERS.length;c++){
+    const ref = XLSX.utils.encode_cell({r:0,c});
+    if(ws[ref]) ws[ref].s = {font:{bold:true}, fill:{fgColor:{rgb:"E8EEF4"}}, alignment:{vertical:"center"}};
+  }
+  XLSX.utils.book_append_sheet(wb, ws, "Programme");
+  // Onglet Instructions
+  const wi = XLSX.utils.aoa_to_sheet(INSTRUCTIONS);
+  wi["!cols"]=[{wch:110}];
+  if(wi["A1"]) wi["A1"].s={font:{bold:true,sz:13}};
+  XLSX.utils.book_append_sheet(wb, wi, "Instructions");
+  return wb;
+}
+function downloadTemplate(){
+  XLSX.writeFile(buildTemplateWorkbook(), "fitness_template.xlsx");
+}
+
+/* ---------- Chargement / parsing programme ---------- */
+function slug(s){ return String(s).trim().replace(/\s+/g," "); }
+function exKey(w,s,o,e){ return [slug(w),slug(s),slug(o),slug(e)].join("||"); }
+function sessKey(w,s){ return [slug(w),slug(s)].join("||"); }
+
+function parseWorkbook(wb){
+  const ws = wb.Sheets["Programme"];
+  if(!ws) throw new Error("Onglet « Programme » introuvable dans le fichier.");
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, blankrows:false, defval:""});
+  if(!rows.length) throw new Error("La feuille « Programme » est vide.");
+  const head = rows[0].map(x=>slug(x));
+  // validation en-têtes exacts (présence + ordre)
+  const missing = HEADERS.filter(h=> !head.includes(h));
+  if(missing.length) throw new Error("Colonne(s) manquante(s) : « "+missing.join(" », « ")+" ». Utilise le template généré.");
+  const idx = {}; HEADERS.forEach(h=> idx[h]=head.indexOf(h));
+  const dataRows = rows.slice(1).filter(r=> r.some(c=> String(c).trim()!==""));
+  if(!dataRows.length) throw new Error("Le programme ne contient aucune ligne de données. Remplis le template d'abord.");
+
+  const weeksMap = new Map();
+  for(const r of dataRows){
+    const w = slug(r[idx["Semaine"]]); const s = slug(r[idx["Session"]]);
+    if(!w || !s) continue;
+    if(!weeksMap.has(w)) weeksMap.set(w, new Map());
+    const sm = weeksMap.get(w);
+    if(!sm.has(s)) sm.set(s, []);
+    sm.get(s).push({
+      ordre: slug(r[idx["Ordre Exercice"]]),
+      exercice: slug(r[idx["Exercice"]]),
+      sets: Math.max(1, parseInt(r[idx["Sets"]],10) || 1),
+      reps: slug(r[idx["Reps"]]),
+      poids: slug(r[idx["Poids Suggéré (kg)"]]),
+      rpe: slug(r[idx["Target RPE"]]),
+      repos: Math.max(0, parseInt(r[idx["Temps Repos (sec)"]],10) || 0),
+      notes: slug(r[idx["Notes"]]),
+    });
+  }
+  const weeks = [];
+  for(const [w, sm] of weeksMap){
+    const sessions=[];
+    for(const [s, exs] of sm){
+      exs.sort((a,b)=> (parseFloat(a.ordre)||0)-(parseFloat(b.ordre)||0));
+      exs.forEach(e=> e.key = exKey(w,s,e.ordre,e.exercice));
+      sessions.push({ session:s, key:sessKey(w,s), exercises:exs });
+    }
+    weeks.push({ semaine:w, sessions });
+  }
+  return { weeks };
+}
+
+async function handleFile(file){
+  clearErr();
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:"array"});
+    const program = parseWorkbook(wb);
+    // Charger un nouveau programme REMPLACE l'ancien + efface la progression
+    state.program = program;
+    state.progress = {};
+    cur = {sessionKey:null, exIndex:0};
+    await persist();
+    renderHome();
+  }catch(e){
+    showErr(e.message || String(e));
+  }
+}
+
+/* ---------- Progress helpers ---------- */
+function getSets(ex){ // bool[]
+  const p = state.progress[ex.key];
+  if(p && Array.isArray(p.sets) && p.sets.length===ex.sets) return p.sets;
+  return new Array(ex.sets).fill(false);
+}
+function setSets(ex, arr){ state.progress[ex.key] = {sets:arr}; }
+function exDone(ex){ return getSets(ex).every(Boolean); }
+function sessionStats(sess){
+  let total=0, done=0;
+  for(const ex of sess.exercises){ const s=getSets(ex); total+=s.length; done+=s.filter(Boolean).length; }
+  return {total, done};
+}
+
+/* ---------- Render HOME ---------- */
+const $ = (id)=>document.getElementById(id);
+function ringSVG(pct){
+  const r=44, c=2*Math.PI*r, off=c*(1-pct/100);
+  return "<svg class='ring' viewBox='0 0 120 120'>"
+    +"<circle class='rk' cx='60' cy='60' r='"+r+"' fill='none' stroke-width='10'/>"
+    +"<circle class='rp' cx='60' cy='60' r='"+r+"' fill='none' stroke-width='10' stroke-linecap='round' stroke-dasharray='"+c.toFixed(1)+"' stroke-dashoffset='"+off.toFixed(1)+"' transform='rotate(-90 60 60)'/>"
+    +"<text class='rv' x='60' y='66' text-anchor='middle' font-size='26' font-weight='800' style='letter-spacing:-.02em'>"+pct+"%</text></svg>";
+}
+
+const ICON = {
+  clock:"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8'/><path d='M12 8v4l3 2'/></svg>",
+  arrow:"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h13M13 6l6 6-6 6'/></svg>",
+  check:"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>",
+  cal:"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='5' width='16' height='16' rx='2'/><path d='M8 3v4M16 3v4M4 10h16'/></svg>",
+  dumb:"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'><path d='M6.5 8v8M4 9.5v5M17.5 8v8M20 9.5v5M6.5 12h11'/></svg>",
+  trend:"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 16l5-5 4 4 7-8M15 7h5v5'/></svg>",
+  play:"<svg viewBox='0 0 24 24' fill='currentColor'><path d='M7 5l12 7-12 7z'/></svg>"
+};
+
+function renderHome(){
+  showView("Home");
+  const dash=$("dash"); dash.innerHTML="";
+  const tree=$("programTree"); tree.innerHTML="";
+  if(!state.program){
+    $("homeStatus").textContent="Prêt à t'entraîner ? Génère un template, remplis-le, puis charge-le.";
+    dash.innerHTML="<div class='empty'><div class='glow'></div><span class='prot-label'>Aucun programme</span>"
+      +"<h3>Charge ta séance</h3><p>Importe un fichier .xlsx rempli pour démarrer ton suivi.</p>"
+      +"<button class='primary' id='emptyLoad'>Charger un .xlsx</button></div>";
+    const el=$("emptyLoad"); if(el) el.onclick=()=>$("fileInput").click();
+    $("homeActions").classList.add("hidden");
+    return;
+  }
+  const sessions=[]; for(const wk of state.program.weeks) for(const s of wk.sessions) sessions.push({wk,s});
+  const totalSess=sessions.length;
+  let doneSess=0,totalSets=0,doneSets=0,totalEx=0,doneEx=0;
+  for(const o of sessions){ const st=sessionStats(o.s); totalSets+=st.total; doneSets+=st.done;
+    if(st.total>0&&st.done===st.total)doneSess++;
+    for(const ex of o.s.exercises){ totalEx++; if(exDone(ex))doneEx++; } }
+  const next=sessions.find(o=>{const st=sessionStats(o.s); return !(st.total>0&&st.done===st.total);})||sessions[0];
+  const pct=totalSess?Math.round(100*doneSess/totalSess):0;
+
+  // Semaine de la prochaine séance
+  const wkSessions=next.wk.sessions;
+  let wkDone=0; for(const s of wkSessions){const st=sessionStats(s); if(st.total>0&&st.done===st.total)wkDone++;}
+  const wkRem=Math.max(0, wkSessions.length-wkDone);
+  $("homeStatus").innerHTML = wkRem>0
+    ? "Plus que <b>"+wkRem+"</b> séance"+(wkRem>1?"s":"")+" sur "+esc(next.wk.semaine)+" — continue comme ça."
+    : "Semaine bouclée — "+esc(next.wk.semaine)+" terminée. Repos mérité.";
+
+  // 1) Assiduité de la semaine (barres)
+  let bars="";
+  wkSessions.forEach((s,i)=>{
+    const st=sessionStats(s); const p=st.total?Math.round(100*st.done/st.total):0;
+    const cls = p>=100?"full":(p>0?"part":"");
+    const h = Math.max(8,p);
+    bars+="<div class='barcol'><div class='bartrack'><div class='bar "+cls+"' style='height:"+h+"%'></div></div><span class='barlbl'>S"+(i+1)+"</span></div>";
+  });
+  const att=document.createElement("div"); att.className="card";
+  att.innerHTML="<div class='cardhead'><h3 class='hm'>"+esc(next.wk.semaine)+"</h3><span class='pillneon'>"+wkDone+"/"+wkSessions.length+" séances</span></div><div class='bars'>"+bars+"</div>";
+  dash.appendChild(att);
+
+  // 2) Carte protocole sombre — prochaine séance
+  const prot=document.createElement("div"); prot.className="protocol";
+  prot.innerHTML="<div class='glow'></div>"
+    +"<div class='prot-top'><div><span class='prot-label'>Prochaine séance</span><h3 class='prot-name'>"+esc(next.s.session)+"</h3><p class='prot-week'>"+esc(next.wk.semaine)+"</p></div><span class='prot-ic'>"+ICON.dumb+"</span></div>"
+    +"<div class='prot-meta'><span>"+ICON.clock+"~45 minutes</span><span>"+ICON.dumb+next.s.exercises.length+" exercices</span></div>"
+    +"<button class='prot-start'>"+ICON.play+"Démarrer la séance</button>";
+  prot.querySelector(".prot-start").onclick=()=>startSession(next.s.key);
+  dash.appendChild(prot);
+
+  // 3) Avancement global (anneau + stats)
+  const av=document.createElement("div"); av.className="card";
+  av.innerHTML="<div class='cardhead'><h3 class='hm'>Avancement du programme</h3><span class='ic'>"+ICON.trend+"</span></div>"
+    +"<div class='progwrap'>"+ringSVG(pct)
+    +"<div class='progside'><div class='ministat'><span class='ms-v'>"+doneSess+"/"+totalSess+"</span><span class='ms-k'>Séances</span></div>"
+    +"<div class='ministat'><span class='ms-v'>"+doneSets+"/"+totalSets+"</span><span class='ms-k'>Séries</span></div></div></div>"
+    +"<div class='goalrow'><span>Objectif programme</span><b>"+pct+"%</b></div>"
+    +"<div class='flatbar'><i style='width:"+pct+"%'></i></div>";
+  dash.appendChild(av);
+
+  $("homeActions").classList.remove("hidden");
+
+  // Programme complet (replié)
+  for(const wk of state.program.weeks){
+    const det=document.createElement("details"); det.className="week";
+    const sum=document.createElement("summary"); sum.textContent=wk.semaine; det.appendChild(sum);
+    for(const sess of wk.sessions){
+      const st=sessionStats(sess);
+      const div=document.createElement("div"); div.className="session";
+      const head=document.createElement("div"); head.className="shead";
+      head.innerHTML="<span class='title'>"+esc(sess.session)+"</span><span class='pill'>"+st.done+"/"+st.total+"</span>";
+      const btn=document.createElement("button"); btn.className="sm primary"; btn.textContent="▶";
+      btn.onclick=()=>startSession(sess.key); head.appendChild(btn); div.appendChild(head);
+      for(const ex of sess.exercises){
+        const line=document.createElement("div"); line.className="ex-line"+(exDone(ex)?" done":"");
+        line.innerHTML="<span class='ord'>"+esc(ex.ordre||"•")+"</span><span class='nm'>"+esc(ex.exercice)
+          +"<div class='sub'>"+ex.sets+"×"+esc(ex.reps||"?")+(ex.poids?(" · "+esc(ex.poids)+" kg"):"")+(ex.rpe?(" · RPE "+esc(ex.rpe)):"")+"</div></span>";
+        div.appendChild(line);
+      }
+      const pr=document.createElement("div"); pr.className="prog"; pr.innerHTML="<i style='width:"+(st.total?Math.round(100*st.done/st.total):0)+"%'></i>"; div.appendChild(pr);
+      det.appendChild(div);
+    }
+    tree.appendChild(det);
+  }
+}
+
+/* ---------- Session run ---------- */
+function findSession(key){
+  for(const wk of state.program.weeks) for(const s of wk.sessions) if(s.key===key) return {wk, sess:s};
+  return null;
+}
+function startSession(key){
+  cur = {sessionKey:key, exIndex:-1};
+  releaseWake(); requestWake(); // anti-veille ON au démarrage de la session
+  startSessClock();
+  renderSession();
+}
+function renderSession(){
+  const f = findSession(cur.sessionKey); if(!f){ renderHome(); return; }
+  showView("Session");
+  $("sessTitle").textContent = f.wk.semaine + " — " + f.sess.session;
+  const st = sessionStats(f.sess);
+  $("sessProgress").innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>"+st.done+"/"+st.total+" séries";
+  if(cur.exIndex<0){ showPicker(f.sess); } else { showExercise(f.sess, cur.exIndex); }
+}
+function exCategory(ex){
+  const n=(ex.exercice+" "+(ex.poids||"")).toLowerCase();
+  const has=(...k)=>k.some(x=>n.includes(x));
+  if(has("superset"," + "," et ")) return {t:"SUPERSET", sup:true};
+  if(has("incliné","incline")) return {t:"INCLINE", sup:false};
+  if(has("1 bras","unilat")) return {t:"UNILATÉRAL", sup:false};
+  if(has("kb ","kettlebell","swing")) return {t:"KETTLEBELL", sup:false};
+  if(has("élastique","elastique","band ")) return {t:"ÉLASTIQUE", sup:false};
+  if(has("barre","soulevé","souleve","rdl","hip thrust")) return {t:"BARRE", sup:false};
+  if(has("haltère","halter","dumbbell","goblet","gobelet")) return {t:"HALTÈRES", sup:false};
+  if(has("pdc","poids du corps","traction","pompe","gainage","planche","dips")) return {t:"POIDS DU CORPS", sup:false};
+  return {t:"FORCE", sup:false};
+}
+// Déduit la partie du corps depuis le nom de l'exercice -> image figure (sans texte) + libellé
+function muscleImg(ex){
+  const n=(ex.exercice||"").toLowerCase();
+  const has=(...k)=>k.some(x=>n.includes(x));
+  if(has("trapèze","trapeze","shrug","haussement")) return {img:"traps2.jpg", label:"Trapèzes"};
+  if(has("abdo"," abs","gainage","planche","plank","crunch","relevé","releve","core")) return {img:"abs2.jpg", label:"Abdominaux"};
+  if(has("épaule","epaule","militaire","overhead","latérale","laterale","oiseau","arnold","deltoïde","deltoide","face pull","nuque")) return {img:"shoulders2.jpg", label:"Épaules"};
+  if(has("jambe","squat","fente","presse","leg","mollet","ischio","quadri"," quad","hip","rdl","roumain","goblet","gobelet","cuisse","fessier")) return {img:"legs2.jpg", label:"Jambes"};
+  if(has("dos","traction","tirage","rowing"," row","soulevé de terre","souleve de terre","deadlift","pull","lat ","good morning")) return {img:"back2.jpg", label:"Dos"};
+  if(has("pec","couché","couche","bench","pompe","écarté","ecarte","dips","butterfly","incliné","incline")) return {img:"chest2.jpg", label:"Pectoraux"};
+  return {img:"chest2.jpg", label:"Pectoraux"};
+}
+function showPicker(sess){
+  $("exPicker").classList.remove("hidden"); $("exDetail").classList.add("hidden");
+  const g = $("exTiles"); g.innerHTML="";
+  const curIdx = sess.exercises.findIndex(ex=>!exDone(ex));
+  sess.exercises.forEach((ex,i)=>{
+    const s=getSets(ex); const dn=s.filter(Boolean).length; const tot=ex.sets;
+    const pct=tot?Math.round(100*dn/tot):0; const cat=exCategory(ex);
+    let lbl, act; if(dn===0){lbl="NON COMMENCÉ"; act=false;} else if(dn>=tot){lbl="TERMINÉ"; act=true;} else {lbl="PROGRESSION"; act=true;}
+    const card=document.createElement("div"); card.className="exrow"+(i===curIdx?" cur":"");
+    card.innerHTML=
+      "<div class='exhead'><div class='exnum'>"+esc(ex.ordre||(i+1))+"</div>"
+      +"<span class='excat"+(cat.sup?" sup":"")+"'>"+esc(cat.t)+"</span></div>"
+      +"<h3>"+esc(ex.exercice)+"</h3>"
+      +"<div class='exsr'><span class='k'>Séries &amp; Reps</span><span class='v'>"+ex.sets+" × "+esc(ex.reps||"?")+"</span></div>"
+      +"<div class='ptrack'><div class='pfill' style='width:"+pct+"%'></div></div>"
+      +"<div class='exstat"+(act?" act":"")+"'><span>"+lbl+"</span><span>"+dn+"/"+tot+" SÉRIES</span></div>";
+    card.onclick=()=>{ cur.exIndex=i; renderSession(); };
+    g.appendChild(card);
+  });
+}
+function showExercise(sess, i){
+  $("exPicker").classList.add("hidden"); $("exDetail").classList.remove("hidden");
+  const ex = sess.exercises[i];
+  const iso=/curl|élévation|elevation|écart|ecart|extension|oiseau|mollet|leg curl|leg extension/.test(ex.exercice.toLowerCase());
+  const m=muscleImg(ex);
+  $("exPos").textContent = "Exercice "+(i+1)+" / "+sess.exercises.length;
+  $("exFig").innerHTML = "<div class='musinfo'><span class='k'>Muscles travaillés</span><b>"+m.label+"</b></div><img src='"+m.img+"' alt='"+m.label+"'>";
+  $("exName").innerHTML = esc(ex.exercice)+"<span class='excat'>"+(iso?"ISOLATION":"COMPOUND")+"</span>";
+  $("exMeta").innerHTML =
+    "<div class='exinfo'><div class='r'><span class='k'>Séries</span><span class='v'>"+ex.sets+"</span></div>"
+    +"<div class='r'><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"</span></div></div>"
+    +"<div class='exmeta2'>"+(ex.poids?("<span>"+esc(ex.poids)+" kg</span>"):"")
+    +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")+(ex.repos?("<span>Repos "+ex.repos+" s</span>"):"")+"</div>";
+  $("exNotes").textContent = ex.notes ? ("Note : "+ex.notes) : "";
+  const arr = getSets(ex); const list=$("setList"); list.innerHTML="";
+  arr.forEach((on,si)=>{
+    const r=document.createElement("div"); r.className="setrow"+(on?" checked":"");
+    r.innerHTML = "<span class='setno'>"+(si+1)+"</span>"
+      +"<div class='setdata'><span class='sd-w'>"+(ex.poids?esc(ex.poids)+" kg":"—")+"</span><span class='sd-r'>"+esc(ex.reps||"?")+" reps</span></div>"
+      +"<span class='cb'>"+(on?"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>":"")+"</span>";
+    r.onclick = ()=> toggleSet(sess, i, si);
+    list.appendChild(r);
+  });
+}
+async function toggleSet(sess, i, si){
+  const ex = sess.exercises[i];
+  const arr = getSets(ex).slice();
+  const wasOn = arr[si];
+  arr[si] = !arr[si];
+  setSets(ex, arr);
+  await persist();
+  showExercise(sess, i);
+  // mise à jour compteur
+  const st = sessionStats(sess); $("sessProgress").innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>"+st.done+"/"+st.total+" séries";
+  // Cocher (passer à complété) => démarre le timer de repos
+  if(!wasOn && arr[si] && ex.repos>0){
+    const total=arr.length, done=arr.filter(Boolean).length, nextN=Math.min(done+1,total), last=done>=total;
+    startTimer(ex.repos, {
+      title: ex.exercice || "Récupération",
+      sub: last ? "Dernière série terminée — bravo" : ("Série "+nextN+" / "+total + (ex.reps?(" · "+ex.reps+" reps"):""))
+    });
+  }
+}
+
+/* navigation exercices (ordre libre, sans contrainte) */
+function moveEx(delta){
+  const f=findSession(cur.sessionKey); if(!f) return;
+  const n=f.sess.exercises.length;
+  cur.exIndex = (cur.exIndex+delta+n)%n;
+  renderSession();
+}
+
+/* ---------- Chrono de séance (durée écoulée) ---------- */
+let sessClock = {start:0, h:null};
+function startSessClock(){
+  stopSessClock();
+  sessClock.start = Date.now();
+  paintSessClock();
+  sessClock.h = setInterval(paintSessClock, 1000);
+}
+function stopSessClock(){ if(sessClock.h){ clearInterval(sessClock.h); sessClock.h=null; } }
+function paintSessClock(){
+  const el=$("sessClock"); if(!el) return;
+  const s=Math.max(0, Math.floor((Date.now()-sessClock.start)/1000));
+  el.textContent = Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+}
+
+/* ---------- Timer de repos ---------- */
+let timer = {dur:0, left:0, running:false, h:null};
+const RST_C = 283; // circonférence de l'anneau (2·π·45)
+const SVG_PAUSE = "<svg viewBox='0 0 24 24'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>";
+const SVG_PLAY  = "<svg viewBox='0 0 24 24'><path d='M7 5l12 7-12 7z'/></svg>";
+function setPauseBtn(running){ $("tPause").innerHTML = (running?SVG_PAUSE:SVG_PLAY) + "<span>"+(running?"Pause":"Reprendre")+"</span>"; }
+function fmt(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function paintTimer(){
+  $("timerVal").textContent = fmt(timer.left);
+  const ring = $("rstRing");
+  if(ring){ const frac = timer.dur>0 ? Math.max(0,Math.min(1, timer.left/timer.dur)) : 0; ring.style.strokeDashoffset = (RST_C*(1-frac)).toFixed(1); }
+}
+function startTimer(sec, ctx){
+  stopTick();
+  timer.dur=sec; timer.left=sec; timer.running=true;
+  if(ctx){ $("rstTitle").textContent = ctx.title; $("rstSub").textContent = ctx.sub; }
+  $("timer").classList.remove("hidden");
+  setPauseBtn(true);
+  paintTimer(); tick();
+}
+function tick(){
+  stopTick();
+  timer.h = setInterval(()=>{
+    if(!timer.running) return;
+    timer.left -= 1;
+    if(timer.left<=0){ timer.left=0; paintTimer(); timerDone(); return; }
+    paintTimer();
+  },1000);
+}
+function stopTick(){ if(timer.h){ clearInterval(timer.h); timer.h=null; } }
+function closeTimer(){ stopTick(); timer.running=false; $("timer").classList.add("hidden"); }
+function timerDone(){
+  stopTick(); timer.running=false;
+  if(navigator.vibrate) try{ navigator.vibrate([200,100,200]); }catch(e){}
+  beep();
+  const t=$("timer"); t.classList.add("flash"); setTimeout(()=>t.classList.remove("flash"),2200);
+  setTimeout(closeTimer, 1400);
+}
+function beep(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type="sine"; o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.4,ctx.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.45);
+    o.start(); o.stop(ctx.currentTime+0.5);
+  }catch(e){}
+}
+
+/* ---------- Wake Lock (anti-veille) ---------- */
+let wakeLock=null;
+async function requestWake(){
+  if(!state.settings.keepAwake) return;
+  if(!("wakeLock" in navigator)){ return; }
+  try{
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", ()=>{ wakeLock=null; });
+  }catch(e){ wakeLock=null; }
+}
+async function releaseWake(){ try{ if(wakeLock){ await wakeLock.release(); } }catch(e){} wakeLock=null; }
+document.addEventListener("visibilitychange", ()=>{
+  // le lock est perdu si l'écran s'éteint -> le redemander quand on revient au 1er plan
+  if(document.visibilityState==="visible" && !$("viewSession").classList.contains("hidden") && state.settings.keepAwake){
+    requestWake();
+  }
+});
+function applyWakeToggleUI(){
+  const sw=$("swWake"); sw.classList.toggle("on", !!state.settings.keepAwake);
+  $("wakeNote").textContent = ("wakeLock" in navigator)
+    ? "API disponible sur cet appareil."
+    : "API indisponible ici — garde l'écran actif manuellement.";
+}
+
+/* ---------- View switch ---------- */
+function showView(name){
+  $("viewHome").classList.toggle("hidden", name!=="Home");
+  $("viewSession").classList.toggle("hidden", name!=="Session");
+  const tb=$("tabbar"); if(tb) tb.classList.toggle("hidden", name!=="Home");
+  if(name!=="Session"){ stopSessClock(); }
+  if(name==="Home"){ releaseWake(); }
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
+function showErr(m){ $("loadErr").innerHTML="<div class='err'>⚠️ "+esc(m)+"</div>"; }
+function clearErr(){ $("loadErr").innerHTML=""; }
+
+/* ---------- Events ---------- */
+$("btnTemplate").onclick = downloadTemplate;
+$("btnLoad").onclick = ()=> $("fileInput").click();
+$("fileInput").onchange = (e)=>{ const f=e.target.files[0]; if(f) handleFile(f); e.target.value=""; };
+$("btnResetProg").onclick = async ()=>{ if(confirm("Réinitialiser toute la progression ? (le programme est conservé)")){ state.progress={}; await persist(); renderHome(); } };
+$("btnBackHome").onclick = ()=>{ closeTimer(); renderHome(); };
+$("btnPrevEx").onclick = ()=> moveEx(-1);
+$("btnNextEx").onclick = ()=> moveEx(1);
+$("btnPickEx").onclick = ()=>{ cur.exIndex=-1; renderSession(); };
+// timer controls
+$("tPause").onclick = ()=>{ timer.running=!timer.running; setPauseBtn(timer.running); if(timer.running && !$("viewSession").classList.contains("hidden")) requestWake(); };
+$("tPlus").onclick = ()=>{ timer.left+=15; if(timer.left>timer.dur) timer.dur=timer.left; paintTimer(); };
+$("tMinus").onclick = ()=>{ timer.left=Math.max(0,timer.left-15); paintTimer(); };
+$("tReset").onclick = ()=>{ timer.left=timer.dur; timer.running=true; setPauseBtn(true); paintTimer(); };
+$("tSkip").onclick = closeTimer;
+// thème clair / sombre
+$("btnTheme").onclick = async ()=>{
+  state.settings.theme = (state.settings.theme === "dark") ? "light" : "dark";
+  applyTheme(state.settings.theme);
+  await persist();
+};
+// settings
+$("btnSettings").onclick = ()=> $("settings").classList.remove("hidden");
+$("btnCloseSettings").onclick = ()=> $("settings").classList.add("hidden");
+$("swWake").onclick = async ()=>{ state.settings.keepAwake=!state.settings.keepAwake; applyWakeToggleUI(); await persist(); if(state.settings.keepAwake && !$("viewSession").classList.contains("hidden")) requestWake(); else releaseWake(); };
+// Tuiles + barre de navigation
+const jumpTree=()=>{ const t=$("programTree"); if(t) t.scrollIntoView({behavior:"smooth", block:"start"}); };
+$("btnProgramJump").onclick = jumpTree;
+$("tabHome").onclick = ()=> window.scrollTo({top:0, behavior:"smooth"});
+$("tabProg").onclick = jumpTree;
+$("tabSettings").onclick = ()=> $("settings").classList.remove("hidden");
+
+boot();
+</script>
+</body>
+</html>
