@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#f9f9f9" />
+<meta http-equiv="Cache-Control" content="no-cache" />
 <title>Evolve Fitness App</title>
 <style>
   /* cyrillic-ext */
@@ -283,7 +284,7 @@
     --shadow-hi:0 14px 36px rgba(24,22,16,.10);
     --ring:0 0 0 3px rgba(46,91,255,.45);
     --glow:0 0 0 1px rgba(46,91,255,.38), 0 20px 60px -16px rgba(46,91,255,.85);
-    --glow-card:0 0 0 1px rgba(46,91,255,.14), 0 14px 38px -20px rgba(46,91,255,.42);
+    --glow-card:0 0 0 1px rgba(46,91,255,.30), 0 12px 34px -10px rgba(46,91,255,.55);
   }
   /* ===== dark-first (référence) — charcoal premium + bleu ===== */
   [data-theme="dark"]{
@@ -298,7 +299,7 @@
     --shadow-hi:0 14px 36px rgba(0,0,0,.55);
     --ring:0 0 0 3px rgba(91,140,255,.45);
     --glow:0 0 0 1px rgba(46,91,255,.5), 0 22px 64px -14px rgba(46,91,255,1);
-    --glow-card:0 0 0 1px rgba(46,91,255,.26), 0 16px 44px -18px rgba(46,91,255,.66);
+    --glow-card:0 0 0 1px rgba(46,91,255,.45), 0 16px 44px -12px rgba(46,91,255,.85);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{margin:0; min-height:100%}
@@ -671,9 +672,9 @@
 
   /* === Traitement "glow" bleu sur les cartes (comme la maquette d'origine, en bleu) === */
   .card, .week, .exrow, .scard, .cyclesum, .sesdetail, .empty, .wcard:not(.on){
-    background:linear-gradient(155deg, color-mix(in srgb, var(--neon) 8%, var(--card)) 0%, var(--card) 64%);
+    background:linear-gradient(150deg, color-mix(in srgb, var(--neon) 18%, var(--card)) 0%, var(--card) 56%);
     box-shadow:var(--glow-card);
-    border:1px solid color-mix(in srgb, var(--neon) 22%, var(--line));
+    border:1px solid color-mix(in srgb, var(--neon) 42%, var(--line));
   }
 </style>
 </head>
@@ -1389,6 +1390,10 @@ $("actionsSheet").onclick=(e)=>{ if(e.target.id==="actionsSheet") closeActions()
 $("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.target.closest("button")) setTimeout(closeActions,60); });
 
 boot();
+/* anti-cache : service worker network-first => toujours la derniere version */
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+var APP_VERSION="2026-06-26.4";
+(function(){ var f=document.querySelector('footer'); if(f) f.insertAdjacentHTML('beforeend'," &middot; v"+APP_VERSION); })();
 </script>
 </body>
 </html>
