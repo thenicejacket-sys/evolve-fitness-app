@@ -679,6 +679,21 @@
     box-shadow:var(--glow-card);
     border:1px solid color-mix(in srgb, var(--neon) 42%, var(--line));
   }
+
+  /* ===== Détail exercice : bannière muscle pleine largeur (style réf) ===== */
+  .exdetail{ padding:0; overflow:hidden; }
+  .exbanner{ position:relative; width:100%; aspect-ratio:16/10; overflow:hidden; background:#0b0d12; }
+  .exbanner .exb-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .exbanner::after{ content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(to bottom, rgba(8,10,15,.30) 0%, transparent 24%, transparent 72%, rgba(8,10,15,.55) 100%); }
+  .exb-pill{ position:absolute; top:12px; z-index:2; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    background:rgba(10,12,18,.5); border:1px solid rgba(255,255,255,.14); color:#fff; }
+  .exb-muscle{ left:12px; padding:8px 13px; border-radius:13px; line-height:1.18; }
+  .exb-muscle span{ display:block; font-size:10px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.62); }
+  .exb-muscle b{ font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:700; color:#fff; }
+  .exb-num{ right:12px; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; color:rgba(255,255,255,.88); }
+  .exbody{ padding:18px; }
+  .exbody #exName{ margin-top:2px; }
 </style>
 </head>
 <body>
@@ -722,13 +737,14 @@
 
     <!-- Exercice en cours -->
     <div id="exDetail" class="hidden">
-      <div class="card">
-        <div class="musfig" id="exFig"></div>
-        <div class="expos" id="exPos"></div>
+      <div class="card exdetail">
+        <div class="exbanner" id="exFig"></div>
+        <div class="exbody">
         <h3 id="exName"></h3>
         <p class="muted" id="exMeta"></p>
         <div id="setList"></div>
         <p class="muted" id="exNotes"></p>
+        </div>
       </div>
       <div class="navbar">
         <button id="btnPrevEx">← Exercice préc.</button>
@@ -1201,9 +1217,11 @@ function showExercise(sess, i){
   const ex = sess.exercises[i];
   const iso=/curl|élévation|elevation|écart|ecart|extension|oiseau|mollet|leg curl|leg extension/.test(ex.exercice.toLowerCase());
   const m=muscleImg(ex);
-  $("exPos").textContent = "Exercice "+(i+1)+" / "+sess.exercises.length;
-  var imgSrc = (document.documentElement.getAttribute('data-theme')==='light') ? m.img.replace('.png','-light.png') : m.img;
-  $("exFig").innerHTML = "<div class='musinfo'><span class='k'>Muscles travaillés</span><b>"+m.label+"</b></div><img src='"+imgSrc+"' alt='"+m.label+"'>";
+  var MPOS={chest:"50% 26%",back:"50% 30%",shoulders:"50% 14%",traps:"50% 12%",abs:"50% 40%",legs:"50% 70%"};
+  var part=(m.img.match(/muscles\/([a-z]+)\.png/)||[])[1]||""; var mpos=MPOS[part]||"50% 30%";
+  $("exFig").innerHTML = "<img class='exb-img' src='"+m.img+"' alt='"+esc(m.label)+"' style='object-position:"+mpos+"'>"
+    +"<div class='exb-pill exb-muscle'><span>Muscles travaillés</span><b>"+esc(m.label)+"</b></div>"
+    +"<span class='exb-pill exb-num'>Exercice "+(i+1)+" / "+sess.exercises.length+"</span>";
   $("exName").innerHTML = esc(ex.exercice)+"<span class='excat'>"+(iso?"ISOLATION":"COMPOUND")+"</span>";
   $("exMeta").innerHTML =
     "<div class='exinfo'><div class='r'><span class='k'>Séries</span><span class='v'>"+ex.sets+"</span></div>"
@@ -1397,7 +1415,7 @@ $("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.t
 boot();
 /* anti-cache : service worker network-first => toujours la derniere version */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
-var APP_VERSION="2026-06-26.8";
+var APP_VERSION="2026-06-26.9";
 (function(){ var f=document.querySelector('footer'); if(f) f.insertAdjacentHTML('beforeend'," &middot; v"+APP_VERSION); })();
 </script>
 </body>
