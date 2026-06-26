@@ -1419,6 +1419,7 @@ $("actionsSheet").onclick=(e)=>{ if(e.target.id==="actionsSheet") closeActions()
 $("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.target.closest("button")) setTimeout(closeActions,60); });
 
 boot();
+setTimeout(function(){try{state.program={"weeks":[{"semaine":"Semaine 1","sessions":[{"session":"Haut A — Pec + Dos","key":"S1|HA","exercises":[{"ordre":"1","exercice":"Développé couché haltères","sets":4,"reps":"8-10","rpe":"7","repos":90,"poids":"16/main","notes":"","key":"k1Développé couché haltères"},{"ordre":"2","exercice":"Tractions","sets":4,"reps":"6-8","rpe":"7","repos":90,"poids":"PdC","notes":"","key":"k2Tractions"}]}]}]};state.progress={};state.settings.theme="light";applyTheme("light");startSession("S1|HA");cur.exIndex=0;renderSession();}catch(e){document.body.insertAdjacentHTML("afterbegin","<pre>"+(e&&e.message)+"</pre>");}},1500);
 /* anti-cache : service worker network-first => toujours la derniere version */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 var APP_VERSION="2026-06-26.10";
