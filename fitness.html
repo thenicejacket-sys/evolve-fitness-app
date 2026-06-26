@@ -252,10 +252,10 @@
   .exstat.act{color:var(--accent)}
 
   /* ---- Détail exercice ---- */
-  .musfig{position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--surface-low); border-radius:var(--r-md); overflow:hidden; margin:0 0 16px; min-height:150px}
+  .musfig{position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--dark); border-radius:var(--r-md); overflow:hidden; margin:0 0 16px; min-height:150px}
   .musfig .musinfo{padding:18px; display:flex; flex-direction:column; gap:5px; z-index:1}
-  .musfig .musinfo .k{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
-  .musfig .musinfo b{font-size:19px; font-weight:800; letter-spacing:-.01em; color:var(--ink)}
+  .musfig .musinfo .k{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.55)}
+  .musfig .musinfo b{font-size:19px; font-weight:800; letter-spacing:-.01em; color:#fff}
   .musfig img{height:150px; width:44%; object-fit:contain; object-position:center; flex:none}
   #exName{font-size:22px; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 4px}
   .expos{font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--primary); background:var(--neon); padding:5px 12px; border-radius:999px; display:inline-block; margin:0 0 10px}
@@ -326,7 +326,7 @@
   [data-theme="dark"] .tile.accent{ border-color:transparent; }
   [data-theme="dark"] header{ background:rgba(12,13,15,.82); box-shadow:0 1px 0 rgba(255,255,255,.06); }
   [data-theme="dark"] .tabbar{ background:rgba(18,20,23,.92); border-top-color:var(--line); box-shadow:0 -4px 24px rgba(0,0,0,.6); }
-  [data-theme="dark"] .musfig{ background:var(--surface-container); }
+  [data-theme="dark"] .musfig{ background:var(--dark); }
   [data-theme="dark"] .timer .big{ color:var(--neon); text-shadow:0 0 22px rgba(46,91,255,.42); }
   [data-theme="dark"] .rst-svg .prog{ filter:drop-shadow(0 0 5px rgba(46,91,255,.5)); }
   [data-theme="dark"] .rst-pause{ background:var(--surface-container); border:1px solid var(--line); }
@@ -771,13 +771,13 @@ function exCategory(ex){
 function muscleImg(ex){
   const n=(ex.exercice||"").toLowerCase();
   const has=(...k)=>k.some(x=>n.includes(x));
-  if(has("trapèze","trapeze","shrug","haussement")) return {img:"traps2.jpg", label:"Trapèzes"};
-  if(has("abdo"," abs","gainage","planche","plank","crunch","relevé","releve","core")) return {img:"abs2.jpg", label:"Abdominaux"};
-  if(has("épaule","epaule","militaire","overhead","latérale","laterale","oiseau","arnold","deltoïde","deltoide","face pull","nuque")) return {img:"shoulders2.jpg", label:"Épaules"};
-  if(has("jambe","squat","fente","presse","leg","mollet","ischio","quadri"," quad","hip","rdl","roumain","goblet","gobelet","cuisse","fessier")) return {img:"legs2.jpg", label:"Jambes"};
-  if(has("dos","traction","tirage","rowing"," row","soulevé de terre","souleve de terre","deadlift","pull","lat ","good morning")) return {img:"back2.jpg", label:"Dos"};
-  if(has("pec","couché","couche","bench","pompe","écarté","ecarte","dips","butterfly","incliné","incline")) return {img:"chest2.jpg", label:"Pectoraux"};
-  return {img:"chest2.jpg", label:"Pectoraux"};
+  if(has("trapèze","trapeze","shrug","haussement")) return {img:"muscles/traps.png", label:"Trapèzes"};
+  if(has("abdo"," abs","gainage","planche","plank","crunch","relevé","releve","core")) return {img:"muscles/abs.png", label:"Abdominaux"};
+  if(has("épaule","epaule","militaire","overhead","latérale","laterale","oiseau","arnold","deltoïde","deltoide","face pull","nuque")) return {img:"muscles/shoulders.png", label:"Épaules"};
+  if(has("jambe","squat","fente","presse","leg","mollet","ischio","quadri"," quad","hip","rdl","roumain","goblet","gobelet","cuisse","fessier")) return {img:"muscles/legs.png", label:"Jambes"};
+  if(has("dos","traction","tirage","rowing"," row","soulevé de terre","souleve de terre","deadlift","pull","lat ","good morning")) return {img:"muscles/back.png", label:"Dos"};
+  if(has("pec","couché","couche","bench","pompe","écarté","ecarte","dips","butterfly","incliné","incline")) return {img:"muscles/chest.png", label:"Pectoraux"};
+  return {img:"muscles/chest.png", label:"Pectoraux"};
 }
 function showPicker(sess){
   $("exPicker").classList.remove("hidden"); $("exDetail").classList.add("hidden");
