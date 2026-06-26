@@ -684,6 +684,8 @@
       <p id="homeStatus"></p>
     </section>
     <div id="dash"></div>
+    <div id="programTree"></div>
+    <div id="progressMount"></div>
     <div class="seclabel" style="margin-top:30px">Actions rapides</div>
     <div class="tiles">
       <button class="tile accent" id="btnLoad"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><b>Charger</b><span>Fichier .xlsx</span></button>
@@ -693,7 +695,6 @@
     </div>
     <input id="fileInput" type="file" accept=".xlsx" class="hidden" />
     <div id="loadErr"></div>
-    <div id="programTree"></div>
     <div class="hidden" id="homeActions"></div>
   </section>
 
@@ -1052,6 +1053,7 @@ function renderHome(){
   showView("Home");
   const dash=$("dash"); dash.innerHTML="";
   const tree=$("programTree"); tree.innerHTML="";
+  const pm=$("progressMount"); if(pm) pm.innerHTML="";
   if(!state.program){
     $("homeStatus").textContent="Prêt à t'entraîner ? Génère un template, remplis-le, puis charge-le.";
     dash.innerHTML="<div class='empty'><div class='glow'></div><span class='prot-label'>Aucun programme</span>"
@@ -1069,23 +1071,29 @@ function renderHome(){
     for(const ex of o.s.exercises){ totalEx++; if(exDone(ex))doneEx++; } }
   const next=sessions.find(o=>{const st=sessionStats(o.s); return !(st.total>0&&st.done===st.total);})||sessions[0];
   const pct=totalSess?Math.round(100*doneSess/totalSess):0;
+  // séance affichée dans le hero = sélection du navigateur CYCLE/SÉANCES (défaut = prochaine)
+  const weeks=state.program.weeks;
+  const nextWi=Math.max(0, weeks.indexOf(next.wk));
+  if(browse.sessKey===null || !weeks[browse.weekIdx] || !weeks[browse.weekIdx].sessions.some(s=>s.key===browse.sessKey)){ browse.weekIdx=nextWi; browse.sessKey=next.s.key; }
+  const selWk=weeks[browse.weekIdx]; const selSs=selWk.sessions.find(s=>s.key===browse.sessKey)||selWk.sessions[0];
+  const isNext=(selSs.key===next.s.key);
 
   // Semaine de la prochaine séance
-  const wkSessions=next.wk.sessions;
+  const wkSessions=selWk.sessions;
   let wkDone=0; for(const s of wkSessions){const st=sessionStats(s); if(st.total>0&&st.done===st.total)wkDone++;}
   const wkRem=Math.max(0, wkSessions.length-wkDone);
   $("homeStatus").innerHTML = wkRem>0
-    ? "Plus que <b>"+wkRem+"</b> séance"+(wkRem>1?"s":"")+" sur "+esc(next.wk.semaine)+" — continue comme ça."
-    : "Semaine bouclée — "+esc(next.wk.semaine)+" terminée. Repos mérité.";
+    ? "Plus que <b>"+wkRem+"</b> séance"+(wkRem>1?"s":"")+" sur "+esc(selWk.semaine)+" — continue comme ça."
+    : "Semaine bouclée — "+esc(selWk.semaine)+" terminée. Repos mérité.";
 
 
   // 2) Carte protocole sombre — prochaine séance
   const prot=document.createElement("div"); prot.className="protocol";
   prot.innerHTML="<div class='glow'></div>"
-    +"<div class='prot-top'><div><span class='prot-label'>Prochaine séance</span><h3 class='prot-name'>"+esc(next.s.session)+"</h3><p class='prot-week'>"+esc(next.wk.semaine)+"</p></div><span class='prot-ic'>"+ICON.dumb+"</span></div>"
-    +"<div class='prot-meta'><span>"+ICON.clock+"~45 minutes</span><span>"+ICON.dumb+next.s.exercises.length+" exercices</span>"+(wkRem>0?("<span>"+ICON.cal+wkRem+" séance"+(wkRem>1?"s":"")+" restante"+(wkRem>1?"s":"")+"</span>"):"")+"</div>"
+    +"<div class='prot-top'><div><span class='prot-label'>"+(isNext?"Prochaine séance":"Séance sélectionnée")+"</span><h3 class='prot-name'>"+esc(selSs.session)+"</h3><p class='prot-week'>"+esc(selWk.semaine)+"</p></div><span class='prot-ic'>"+ICON.dumb+"</span></div>"
+    +"<div class='prot-meta'><span>"+ICON.clock+"~45 minutes</span><span>"+ICON.dumb+selSs.exercises.length+" exercices</span>"+(wkRem>0?("<span>"+ICON.cal+wkRem+" séance"+(wkRem>1?"s":"")+" restante"+(wkRem>1?"s":"")+"</span>"):"")+"</div>"
     +"<button class='prot-start'>"+ICON.play+"Démarrer la séance</button>";
-  prot.querySelector(".prot-start").onclick=()=>startSession(next.s.key);
+  prot.querySelector(".prot-start").onclick=()=>startSession(selSs.key);
   dash.appendChild(prot);
 
   // 3) Avancement global (anneau + stats)
@@ -1096,7 +1104,7 @@ function renderHome(){
     +"<div class='ministat'><span class='ms-v'>"+doneSets+"/"+totalSets+"</span><span class='ms-k'>Séries</span></div></div></div>"
     +"<div class='goalrow'><span>Objectif programme</span><b>"+pct+"%</b></div>"
     +"<div class='flatbar'><i style='width:"+pct+"%'></i></div>";
-  dash.appendChild(av);
+  ($("progressMount")||dash).appendChild(av);
 
   $("homeActions").classList.remove("hidden");
 
@@ -1348,8 +1356,8 @@ $("swWake").onclick = async ()=>{ state.settings.keepAwake=!state.settings.keepA
 const jumpTree=()=>{ const t=$("programTree"); if(t) t.scrollIntoView({behavior:"smooth", block:"start"}); };
 $("btnProgramJump").onclick = jumpTree;
 $("programTree").addEventListener("click", (e)=>{
-  const wc=e.target.closest(".wcard"); if(wc){ browse.weekIdx=parseInt(wc.dataset.week,10); browse.sessKey=null; renderProgramBrowser($("programTree")); return; }
-  const scd=e.target.closest(".scard"); if(scd){ browse.sessKey=scd.dataset.sess; renderProgramBrowser($("programTree")); return; }
+  const wc=e.target.closest(".wcard"); if(wc){ browse.weekIdx=parseInt(wc.dataset.week,10); const _w=state.program.weeks[browse.weekIdx]; browse.sessKey=_w&&_w.sessions[0]?_w.sessions[0].key:null; renderHome(); return; }
+  const scd=e.target.closest(".scard"); if(scd){ browse.sessKey=scd.dataset.sess; renderHome(); return; }
   const ei=e.target.closest(".exitem"); if(ei){ startSession(ei.dataset.start); cur.exIndex=parseInt(ei.dataset.ix,10); renderSession(); }
 });
 $("tabHome").onclick = ()=> window.scrollTo({top:0, behavior:"smooth"});
