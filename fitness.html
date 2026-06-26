@@ -522,12 +522,12 @@
   .exstat.act{color:var(--accent)}
 
   /* ---- Détail exercice ---- */
-  .musfig{position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px; background:#e4ecf7; border-radius:var(--r-md); overflow:hidden; margin:0 0 16px; min-height:150px}
+  .musfig{position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px; background:transparent; border-radius:var(--r-md); overflow:hidden; margin:0 0 16px; min-height:150px}
   .musfig .musinfo{padding:18px; display:flex; flex-direction:column; gap:5px; z-index:1}
   .musfig .musinfo .k{font-size:11px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:#5d6478}
   .musfig .musinfo b{font-size:18px; font-weight:700; letter-spacing:-.01em; color:#1a1e28}
   .musfig img{height:150px; width:44%; object-fit:contain; object-position:center; flex:none}
-  [data-theme="dark"] .musfig{ background:#222838; }
+  [data-theme="dark"] .musfig{ background:transparent; }
   [data-theme="dark"] .musfig .musinfo .k{ color:rgba(255,255,255,.6); }
   [data-theme="dark"] .musfig .musinfo b{ color:#fff; }
   #exName{font-size:21px; font-weight:700; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 4px}
@@ -1202,7 +1202,8 @@ function showExercise(sess, i){
   const iso=/curl|élévation|elevation|écart|ecart|extension|oiseau|mollet|leg curl|leg extension/.test(ex.exercice.toLowerCase());
   const m=muscleImg(ex);
   $("exPos").textContent = "Exercice "+(i+1)+" / "+sess.exercises.length;
-  $("exFig").innerHTML = "<div class='musinfo'><span class='k'>Muscles travaillés</span><b>"+m.label+"</b></div><img src='"+m.img+"' alt='"+m.label+"'>";
+  var imgSrc = (document.documentElement.getAttribute('data-theme')==='light') ? m.img.replace('.png','-light.png') : m.img;
+  $("exFig").innerHTML = "<div class='musinfo'><span class='k'>Muscles travaillés</span><b>"+m.label+"</b></div><img src='"+imgSrc+"' alt='"+m.label+"'>";
   $("exName").innerHTML = esc(ex.exercice)+"<span class='excat'>"+(iso?"ISOLATION":"COMPOUND")+"</span>";
   $("exMeta").innerHTML =
     "<div class='exinfo'><div class='r'><span class='k'>Séries</span><span class='v'>"+ex.sets+"</span></div>"
@@ -1368,6 +1369,7 @@ $("btnTheme").onclick = async ()=>{
   state.settings.theme = (state.settings.theme === "dark") ? "light" : "dark";
   applyTheme(state.settings.theme);
   await persist();
+  if(!$("viewSession").classList.contains("hidden") && cur.exIndex>=0){ renderSession(); }
 };
 // settings
 $("btnSettings").onclick = ()=> $("settings").classList.remove("hidden");
@@ -1395,7 +1397,7 @@ $("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.t
 boot();
 /* anti-cache : service worker network-first => toujours la derniere version */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
-var APP_VERSION="2026-06-26.6";
+var APP_VERSION="2026-06-26.7";
 (function(){ var f=document.querySelector('footer'); if(f) f.insertAdjacentHTML('beforeend'," &middot; v"+APP_VERSION); })();
 </script>
 </body>
