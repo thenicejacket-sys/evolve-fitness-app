@@ -270,10 +270,10 @@
 
     :root{
     /* ===== Evolve v3 — style référence "charcoal + glow", marque BLEUE (clair) ===== */
-    --bg:#edf1fb; --card:#dae6fb; --surface-low:#cfdef8; --surface-container:#c2d3f3;
-    --surface-high:#b3c8ed; --surface-dim:#a6bee7;
-    --ink:#1a1e28; --muted:#5e6679; --on-variant:#444932;
-    --line:#c6d5f0; --outline:#a3b1cd; --outline-variant:#bccfe9;
+    --bg:#f2f4f8; --card:#ffffff; --surface-low:#f4f6fa; --surface-container:#eaedf3;
+    --surface-high:#e0e4ec; --surface-dim:#d4d9e3;
+    --ink:#1b1e26; --muted:#646b7a; --on-variant:#444932;
+    --line:#e6e9f0; --outline:#aab2c2; --outline-variant:#d4dae4;
     --neon:#2e5bff; --neon-dim:#2348d8; --tert:#5b8cff;     /* marque bleu électrique */
     --primary:#ffffff; --on-pc:#1b2a6b;                     /* texte blanc sur le bleu */
     --accent:#2348d8;                                       /* bleu profond : texte/icône sur fond clair */
@@ -283,13 +283,14 @@
     --shadow-hi:0 14px 36px rgba(24,22,16,.10);
     --ring:0 0 0 3px rgba(46,91,255,.45);
     --glow:0 0 0 1px rgba(46,91,255,.38), 0 20px 60px -16px rgba(46,91,255,.85);
+    --glow-card:0 0 0 1px rgba(46,91,255,.14), 0 14px 38px -20px rgba(46,91,255,.42);
   }
   /* ===== dark-first (référence) — charcoal premium + bleu ===== */
   [data-theme="dark"]{
-    --bg:#0b0e16; --card:#161b29; --surface-low:#1a2030; --surface-container:#1f2638;
-    --surface-high:#283149; --surface-dim:#222a3e;
-    --ink:#e9ecf6; --muted:#959cb6; --on-variant:#d8d5cc;
-    --line:#2a3249; --outline:#59617c; --outline-variant:#343d57;
+    --bg:#0d0f14; --card:#171a21; --surface-low:#1b1f27; --surface-container:#20242e;
+    --surface-high:#2a2f3a; --surface-dim:#252a34;
+    --ink:#eceef4; --muted:#939bad; --on-variant:#d8d5cc;
+    --line:#282d38; --outline:#586173; --outline-variant:#333a47;
     --neon-dim:#5b8cff;
     --accent:#5b8cff;        /* bleu clair lisible sur charcoal */
     --dark:#131826;
@@ -297,6 +298,7 @@
     --shadow-hi:0 14px 36px rgba(0,0,0,.55);
     --ring:0 0 0 3px rgba(91,140,255,.45);
     --glow:0 0 0 1px rgba(46,91,255,.5), 0 22px 64px -14px rgba(46,91,255,1);
+    --glow-card:0 0 0 1px rgba(46,91,255,.26), 0 16px 44px -18px rgba(46,91,255,.66);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{margin:0; min-height:100%}
@@ -666,6 +668,13 @@
     .scard{flex:none}
   }
 
+
+  /* === Traitement "glow" bleu sur les cartes (comme la maquette d'origine, en bleu) === */
+  .card, .week, .exrow, .scard, .cyclesum, .sesdetail, .empty, .wcard:not(.on){
+    background:linear-gradient(155deg, color-mix(in srgb, var(--neon) 8%, var(--card)) 0%, var(--card) 64%);
+    box-shadow:var(--glow-card);
+    border:1px solid color-mix(in srgb, var(--neon) 22%, var(--line));
+  }
 </style>
 </head>
 <body>
