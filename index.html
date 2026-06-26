@@ -526,7 +526,7 @@
   .musfig .musinfo{padding:18px; display:flex; flex-direction:column; gap:5px; z-index:1}
   .musfig .musinfo .k{font-size:11px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:#5d6478}
   .musfig .musinfo b{font-size:18px; font-weight:700; letter-spacing:-.01em; color:#1a1e28}
-  .musfig img{height:150px; width:44%; object-fit:contain; object-position:center; flex:none}
+  .musfig img{height:172px; width:52%; object-fit:contain; object-position:right center; flex:none; -webkit-mask-image:linear-gradient(to left, #000 46%, transparent 97%); mask-image:linear-gradient(to left, #000 46%, transparent 97%)}
   [data-theme="dark"] .musfig{ background:transparent; }
   [data-theme="dark"] .musfig .musinfo .k{ color:rgba(255,255,255,.6); }
   [data-theme="dark"] .musfig .musinfo b{ color:#fff; }
@@ -1397,7 +1397,7 @@ $("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.t
 boot();
 /* anti-cache : service worker network-first => toujours la derniere version */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
-var APP_VERSION="2026-06-26.7";
+var APP_VERSION="2026-06-26.8";
 (function(){ var f=document.querySelector('footer'); if(f) f.insertAdjacentHTML('beforeend'," &middot; v"+APP_VERSION); })();
 </script>
 </body>
