@@ -1225,7 +1225,7 @@ function showExercise(sess, i){
   const m=muscleImg(ex);
   var MPOS={chest:"50% 26%",back:"50% 30%",shoulders:"50% 14%",traps:"50% 12%",abs:"50% 40%",legs:"50% 70%"};
   var part=(m.img.match(/muscles\/([a-z]+)\.png/)||[])[1]||""; var mpos=MPOS[part]||"50% 30%";
-  var VIDSET={chest:1};
+  var VIDSET={};
   var isLight=(document.documentElement.getAttribute('data-theme')==='light');
   var imgSrc=isLight?m.img.replace('.png','-light.png'):m.img;
   var media=(VIDSET[part] && !isLight)
@@ -1428,7 +1428,7 @@ $("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.t
 boot();
 /* anti-cache : service worker network-first => toujours la derniere version */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
-var APP_VERSION="2026-06-28.2";
+var APP_VERSION="2026-06-28.3";
 (function(){ var f=document.querySelector('footer'); if(f) f.insertAdjacentHTML('beforeend'," &middot; v"+APP_VERSION); })();
 </script>
 </body>
