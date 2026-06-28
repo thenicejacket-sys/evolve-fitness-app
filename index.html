@@ -699,6 +699,7 @@
   [data-theme="dark"] .exb-num{ color:rgba(255,255,255,.88); }
   .exbody{ padding:18px; }
   .exbody #exName{ margin-top:2px; }
+  .exbanner.has-video{ aspect-ratio:1/1; }
 </style>
 </head>
 <body>
@@ -1233,6 +1234,7 @@ function showExercise(sess, i){
   $("exFig").innerHTML = media
     +"<div class='exb-pill exb-muscle'><span>Muscles travaillés</span><b>"+esc(m.label)+"</b></div>"
     +"<span class='exb-pill exb-num'>Exercice "+(i+1)+" / "+sess.exercises.length+"</span>";
+  $("exFig").classList.toggle("has-video", !!(VIDSET[part] && !isLight));
   $("exName").innerHTML = esc(ex.exercice)+"<span class='excat'>"+(iso?"ISOLATION":"COMPOUND")+"</span>";
   $("exMeta").innerHTML =
     "<div class='exinfo'><div class='r'><span class='k'>Séries</span><span class='v'>"+ex.sets+"</span></div>"
@@ -1426,7 +1428,7 @@ $("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.t
 boot();
 /* anti-cache : service worker network-first => toujours la derniere version */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
-var APP_VERSION="2026-06-27.3";
+var APP_VERSION="2026-06-28.1";
 (function(){ var f=document.querySelector('footer'); if(f) f.insertAdjacentHTML('beforeend'," &middot; v"+APP_VERSION); })();
 </script>
 </body>
