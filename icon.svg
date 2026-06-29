@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Evolve Fitness">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b6bff"/>
+      <stop offset="0.55" stop-color="#2348d8"/>
+      <stop offset="1" stop-color="#1530b8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.24" r="0.9">
+      <stop offset="0" stop-color="#7fa0ff" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#7fa0ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dfe7fb"/>
+    </linearGradient>
+  </defs>
+
+  <!-- fond plein cadre (le launcher applique son propre masque) -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+
+  <!-- haltère, centré dans la safe-zone, légèrement incliné -->
+  <g transform="rotate(-16 256 256)" fill="url(#metal)">
+    <!-- barre -->
+    <rect x="196" y="241" width="120" height="30" rx="15"/>
+    <!-- disques intérieurs -->
+    <rect x="171" y="214" width="26" height="84" rx="13"/>
+    <rect x="315" y="214" width="26" height="84" rx="13"/>
+    <!-- disques extérieurs -->
+    <rect x="142" y="196" width="30" height="120" rx="15"/>
+    <rect x="340" y="196" width="30" height="120" rx="15"/>
+    <!-- embouts -->
+    <rect x="128" y="221" width="16" height="70" rx="8"/>
+    <rect x="368" y="221" width="16" height="70" rx="8"/>
+  </g>
+
+  <!-- gloss subtil en haut -->
+  <rect x="0" y="0" width="512" height="190" fill="#ffffff" opacity="0.06"/>
+</svg>
