@@ -1303,7 +1303,7 @@ function showExercise(sess, i){
   var part=(m.img.match(/muscles\/([a-z]+)\.png/)||[])[1]||""; var mpos=MPOS[part]||"50% 30%";
   var VIDSET={};
   var isLight=(document.documentElement.getAttribute('data-theme')==='light');
-  var imgSrc=isLight?m.img.replace('.png','-light.png'):m.img;
+  var imgSrc=m.img; /* toujours l'image "sombre" (plus belle) — même en thème clair */
   var media=(VIDSET[part] && !isLight)
     ? "<video class='exb-img' autoplay loop muted playsinline poster='"+m.img+"' style='object-position:"+mpos+"'><source src='muscles/"+part+".mp4' type='video/mp4'></video>"
     : "<img class='exb-img' src='"+imgSrc+"' alt='"+esc(m.label)+"' style='object-position:"+mpos+"'>";
