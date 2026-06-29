@@ -546,6 +546,17 @@
   .setrow .setno{width:24px; flex:none; font-size:15px; font-weight:700; color:var(--muted); text-align:center}
   .setrow .setdata{flex:1; display:flex; gap:18px}
   .setrow .setdata .sd-w{font-weight:700} .setrow .setdata .sd-r{color:var(--muted); font-weight:500}
+  /* Poids éditable : bouton discret avec affordance crayon (clair + sombre) */
+  .setrow .setdata .sd-w.wedit{font:inherit; font-weight:700; color:var(--ink); background:none;
+    border:none; padding:2px 6px; margin:-2px -6px; border-radius:7px; cursor:pointer;
+    border-bottom:1px dashed var(--outline); display:inline-flex; align-items:center; gap:6px}
+  .setrow .setdata .sd-w.wedit:hover{color:var(--accent); border-bottom-color:var(--accent);
+    background:color-mix(in srgb, var(--neon) 10%, transparent)}
+  .sd-w.wedit .pen, .exwedit .pen{font-size:12px; color:var(--accent); opacity:.8}
+  .exwedit{font:inherit; font-size:13px; font-weight:600; color:var(--accent); cursor:pointer;
+    background:color-mix(in srgb, var(--neon) 12%, transparent); border:1px solid var(--neon);
+    border-radius:8px; padding:3px 10px; display:inline-flex; align-items:center; gap:6px}
+  .exwedit:hover{background:color-mix(in srgb, var(--neon) 20%, transparent)}
   .setrow .cb{width:44px; height:44px; flex:none; border-radius:50%; border:2px solid var(--outline); background:var(--card); display:flex; align-items:center; justify-content:center; color:var(--muted); transition:background .15s, border-color .15s, color .15s}
   .setrow .cb svg{width:22px; height:22px}
   .setrow.checked{background:color-mix(in srgb, var(--neon) 12%, transparent); border-color:var(--neon)}
@@ -1003,8 +1014,36 @@ function getSets(ex){ // bool[]
   if(p && Array.isArray(p.sets) && p.sets.length===ex.sets) return p.sets;
   return new Array(ex.sets).fill(false);
 }
-function setSets(ex, arr){ state.progress[ex.key] = {sets:arr}; }
+function setSets(ex, arr){ const p = state.progress[ex.key] || {}; p.sets = arr; state.progress[ex.key] = p; }
 function exDone(ex){ return getSets(ex).every(Boolean); }
+/* ---- Poids éditable (override par série / par exercice) ---- */
+function getWeights(ex){ // string[] longueur ex.sets ; retombe sur le poids du programme
+  const base = ex.poids ? String(ex.poids) : "";
+  const p = state.progress[ex.key];
+  if(p && Array.isArray(p.weights) && p.weights.length===ex.sets)
+    return p.weights.map(w => (w===null||w===undefined||w==="") ? base : String(w));
+  return new Array(ex.sets).fill(base);
+}
+function setWeight(ex, si, val){ // édite UNE série (val vide => retour au défaut)
+  const p = state.progress[ex.key] || {};
+  let arr = (Array.isArray(p.weights) && p.weights.length===ex.sets) ? p.weights.slice() : new Array(ex.sets).fill(null);
+  arr[si] = (val===""||val==null) ? null : String(val);
+  p.weights = arr;
+  if(!Array.isArray(p.sets) || p.sets.length!==ex.sets) p.sets = getSets(ex).slice();
+  state.progress[ex.key] = p;
+}
+function setWeightAll(ex, val){ // édite TOUT l'exercice
+  const p = state.progress[ex.key] || {};
+  p.weights = new Array(ex.sets).fill((val===""||val==null) ? null : String(val));
+  if(!Array.isArray(p.sets) || p.sets.length!==ex.sets) p.sets = getSets(ex).slice();
+  state.progress[ex.key] = p;
+}
+function exWeightLabel(ex){ // valeur si homogène, sinon "Variable"
+  const ws = getWeights(ex);
+  const uniq = [...new Set(ws.map(w => String(w||"")))];
+  if(uniq.length===1) return uniq[0];
+  return "Variable";
+}
 function sessionStats(sess){
   let total=0, done=0;
   for(const ex of sess.exercises){ const s=getSets(ex); total+=s.length; done+=s.filter(Boolean).length; }
@@ -1094,7 +1133,7 @@ function renderProgramBrowser(tree){
         +"<div class='exi-main'><div class='exi-name'>"+esc(ex.exercice)+(meta?"<span class='exi-meta'>"+meta+"</span>":"")+"</div>"
           +"<div class='exi-chips'><span class='chip'>Séries<b>"+dn+"/"+ex.sets+"</b></span>"
             +(ex.reps?"<span class='chip'>Reps<b>"+esc(ex.reps)+"</b></span>":"")
-            +(ex.poids?"<span class='chip'>Charge<b>"+esc(ex.poids)+"</b></span>":"")+"</div></div>"
+            +((exWeightLabel(ex)||ex.poids)?"<span class='chip'>Charge<b>"+esc(exWeightLabel(ex)||String(ex.poids))+"</b></span>":"")+"</div></div>"
         +"<span class='exi-go'>"+ICON.arrow+"</span></button>";
     });
   }
@@ -1252,16 +1291,20 @@ function showExercise(sess, i){
   $("exMeta").innerHTML =
     "<div class='exinfo'><div class='r'><span class='k'>Séries</span><span class='v'>"+ex.sets+"</span></div>"
     +"<div class='r'><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"</span></div></div>"
-    +"<div class='exmeta2'>"+(ex.poids?("<span>"+esc(ex.poids)+" kg</span>"):"")
+    +"<div class='exmeta2'><button type='button' class='exwedit' title=\"Modifier le poids de tout l'exercice\">"
+      +(exWeightLabel(ex)?(esc(exWeightLabel(ex))+" kg"):"+ poids")+" <span class='pen'>&#9998;</span></button>"
     +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")+(ex.repos?("<span>Repos "+ex.repos+" s</span>"):"")+"</div>";
+  const _exw = $("exMeta").querySelector(".exwedit"); if(_exw) _exw.onclick = ()=> editExerciseWeight(sess, i);
   $("exNotes").textContent = ex.notes ? ("Note : "+ex.notes) : "";
-  const arr = getSets(ex); const list=$("setList"); list.innerHTML="";
+  const arr = getSets(ex); const weights = getWeights(ex); const list=$("setList"); list.innerHTML="";
   arr.forEach((on,si)=>{
     const r=document.createElement("div"); r.className="setrow"+(on?" checked":"");
+    const w = weights[si];
     r.innerHTML = "<span class='setno'>"+(si+1)+"</span>"
-      +"<div class='setdata'><span class='sd-w'>"+(ex.poids?esc(ex.poids)+" kg":"—")+"</span><span class='sd-r'>"+esc(ex.reps||"?")+" reps</span></div>"
+      +"<div class='setdata'><button type='button' class='sd-w wedit' title='Modifier le poids de cette série'>"+(w?esc(w)+" kg":"+ poids")+" <span class='pen'>&#9998;</span></button><span class='sd-r'>"+esc(ex.reps||"?")+" reps</span></div>"
       +"<span class='cb'>"+(on?"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>":"")+"</span>";
     r.onclick = ()=> toggleSet(sess, i, si);
+    r.querySelector(".wedit").onclick = (e)=>{ e.stopPropagation(); editSeriesWeight(sess, i, si); };
     list.appendChild(r);
   });
 }
@@ -1283,6 +1326,27 @@ async function toggleSet(sess, i, si){
       sub: last ? "Dernière série terminée — bravo" : ("Série "+nextN+" / "+total + (ex.reps?(" · "+ex.reps+" reps"):""))
     });
   }
+}
+
+/* Édition du poids — par série */
+async function editSeriesWeight(sess, i, si){
+  const ex = sess.exercises[i];
+  const cur = getWeights(ex)[si] || "";
+  const v = prompt("Poids — série "+(si+1)+" de « "+ex.exercice+" » (kg)\nLaisse vide pour revenir au poids programme :", cur);
+  if(v===null) return;                 // annulé : rien ne change
+  setWeight(ex, si, v.trim());
+  await persist();
+  showExercise(sess, i);
+}
+/* Édition du poids — tout l'exercice */
+async function editExerciseWeight(sess, i){
+  const ex = sess.exercises[i];
+  const lbl = exWeightLabel(ex);
+  const v = prompt("Poids de TOUT l'exercice « "+ex.exercice+" » (kg)\nS'applique à toutes les séries. Vide = poids programme :", lbl==="Variable" ? "" : lbl);
+  if(v===null) return;
+  setWeightAll(ex, v.trim());
+  await persist();
+  showExercise(sess, i);
 }
 
 /* navigation exercices (ordre libre, sans contrainte) */
