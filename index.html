@@ -709,7 +709,10 @@
   .exi-go{color:var(--muted); flex:none; display:flex} .exi-go svg{width:18px; height:18px}
   .exitem:hover .exi-go{color:var(--neon)}
 
-  @media(min-width:600px){
+  /* Disposition 2 colonnes réservée aux vrais grands écrans (tablette/ordi).
+     Évite que les téléphones en mode "Site pour ordinateur" (~980px) tombent
+     sur la mise en page bureau cramponnée et dézoomée. */
+  @media(min-width:1024px){
     .sea-grid{grid-template-columns:228px 1fr; align-items:start}
     .seslist{flex-direction:column; overflow:visible}
     .scard{flex:none}
