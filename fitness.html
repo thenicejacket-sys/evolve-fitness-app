@@ -569,16 +569,30 @@
   .setrow.checked{background:color-mix(in srgb, var(--neon) 12%, transparent); border-color:var(--neon)}
   .setrow.checked .cb{background:var(--neon); border-color:var(--neon); color:var(--primary)}
 
-  /* === CARTES COMPLÉTÉES — teinte bleue de la marque (mode clair + sombre via var(--neon)) === */
-  .scard.done{background:color-mix(in srgb, var(--neon) 12%, var(--card)); border-color:var(--neon)}
-  .scard.done .sc-title{color:var(--accent)}
-  .exrow.done{background:color-mix(in srgb, var(--neon) 12%, var(--card)); border-color:var(--neon)}
+  /* === CARTES COMPLÉTÉES — REMPLIES en bleu de la marque + texte blanc (clair + sombre) === */
+  /* Séance terminée : carte pleine bleue */
+  .scard.done{background:var(--neon); border-color:transparent; box-shadow:var(--glow-card)}
+  .scard.done .sc-title{color:#fff}
+  .scard.done .sc-sub{color:rgba(255,255,255,.85)}
+  .scard.done .sc-ex{color:rgba(255,255,255,.82)}
+  .scard.done .stag{background:rgba(255,255,255,.22); color:#fff}
+  .scard.done.on{box-shadow:var(--glow)}
+  /* Exercice terminé (liste de la séance) : ligne pleine bleue */
+  .exitem.done{background:var(--neon); border-top-color:transparent}
+  .exitem.done .exi-num{color:#fff}
+  .exitem.done .exi-name{color:#fff}
+  .exitem.done .exi-meta{color:rgba(255,255,255,.82)}
+  .exitem.done .exi-chips .chip{background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.30); color:#fff}
+  .exitem.done .exi-chips .chip b{color:#fff}
+  .exitem.done .exi-go{color:#fff}
+  /* Exercice terminé (tuiles séance active) : bleu soutenu */
+  .exrow.done{background:color-mix(in srgb, var(--neon) 32%, var(--card)); border-color:var(--neon)}
   .exrow.done h3{color:var(--accent)}
-  .exitem.done{background:color-mix(in srgb, var(--neon) 12%, transparent)}
-  .exitem.done .exi-name{color:var(--accent)}
-  .exitem.done .exi-go{color:var(--neon)}
-  .wcard.done:not(.on){background:color-mix(in srgb, var(--neon) 13%, var(--card)); border-color:var(--neon)}
-  .wcard.done:not(.on) .wc-num{color:var(--accent)}
+  /* Semaine entièrement faite : carte pleine bleue */
+  .wcard.done:not(.on){background:var(--neon); border-color:transparent}
+  .wcard.done:not(.on) .wc-sem,.wcard.done:not(.on) .wc-cnt{color:rgba(255,255,255,.82)}
+  .wcard.done:not(.on) .wc-num{color:#fff}
+  .wcard.done:not(.on) .wc-name{color:rgba(255,255,255,.9)}
   .navbar{display:flex; gap:10px; margin-top:18px}
   .navbar button{flex:1}
 
