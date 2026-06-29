@@ -594,6 +594,11 @@
   .wcard.done:not(.on) .wc-num{color:#fff}
   .wcard.done:not(.on) .wc-name{color:rgba(255,255,255,.9)}
   .navbar{display:flex; gap:10px; margin-top:18px}
+  .backprog{width:100%; margin-top:10px; min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:color-mix(in srgb, var(--neon) 12%, transparent); border:1px solid var(--neon); color:var(--accent);
+    border-radius:var(--r-md); font-weight:600; font-size:15px; cursor:pointer; transition:background .15s}
+  .backprog:hover{background:color-mix(in srgb, var(--neon) 20%, transparent)}
+  .backprog svg{width:18px; height:18px}
   .navbar button{flex:1}
 
   /* ---- Timer de repos ---- */
@@ -803,6 +808,7 @@
         <button id="btnPickEx">Liste</button>
         <button id="btnNextEx">Exercice suiv. →</button>
       </div>
+      <button id="btnBackProgram" class="backprog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Retour au programme</button>
     </div>
   </section>
 </main>
@@ -1476,6 +1482,7 @@ function showView(name){
   const tb=$("tabbar"); if(tb) tb.classList.toggle("hidden", name!=="Home");
   if(name!=="Session"){ stopSessClock(); }
   if(name==="Home"){ releaseWake(); }
+  if(name==="Session"){ _ensureTrap(); } // arme le retour Android
 }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])); }
 function showErr(m){ $("loadErr").innerHTML="<div class='err'>⚠️ "+esc(m)+"</div>"; }
@@ -1486,16 +1493,17 @@ $("btnTemplate").onclick = downloadTemplate;
 $("btnLoad").onclick = ()=> $("fileInput").click();
 $("fileInput").onchange = (e)=>{ const f=e.target.files[0]; if(f) handleFile(f); e.target.value=""; };
 $("btnResetProg").onclick = async ()=>{ if(confirm("Réinitialiser toute la progression ? (le programme est conservé)")){ state.progress={}; await persist(); renderHome(); } };
-$("btnBackHome").onclick = ()=>{ closeTimer(); renderHome(); };
+$("btnBackHome").onclick = ()=> _back();
 $("btnPrevEx").onclick = ()=> moveEx(-1);
 $("btnNextEx").onclick = ()=> moveEx(1);
 $("btnPickEx").onclick = ()=>{ cur.exIndex=-1; renderSession(); };
+$("btnBackProgram").onclick = ()=> _back();
 // timer controls
 $("tPause").onclick = ()=>{ timer.running=!timer.running; setPauseBtn(timer.running); if(timer.running && !$("viewSession").classList.contains("hidden")) requestWake(); };
 $("tPlus").onclick = ()=>{ timer.left+=15; if(timer.left>timer.dur) timer.dur=timer.left; paintTimer(); };
 $("tMinus").onclick = ()=>{ timer.left=Math.max(0,timer.left-15); paintTimer(); };
 $("tReset").onclick = ()=>{ timer.left=timer.dur; timer.running=true; setPauseBtn(true); paintTimer(); };
-$("tSkip").onclick = closeTimer;
+$("tSkip").onclick = ()=> _back();
 // thème clair / sombre
 $("btnTheme").onclick = async ()=>{
   state.settings.theme = (state.settings.theme === "dark") ? "light" : "dark";
@@ -1504,8 +1512,8 @@ $("btnTheme").onclick = async ()=>{
   if(!$("viewSession").classList.contains("hidden") && cur.exIndex>=0){ renderSession(); }
 };
 // settings
-$("btnSettings").onclick = ()=> $("settings").classList.remove("hidden");
-$("btnCloseSettings").onclick = ()=> $("settings").classList.add("hidden");
+$("btnSettings").onclick = ()=>{ _ensureTrap(); $("settings").classList.remove("hidden"); };
+$("btnCloseSettings").onclick = ()=> _back();
 $("swWake").onclick = async ()=>{ state.settings.keepAwake=!state.settings.keepAwake; applyWakeToggleUI(); await persist(); if(state.settings.keepAwake && !$("viewSession").classList.contains("hidden")) requestWake(); else releaseWake(); };
 // Tuiles + barre de navigation
 const jumpTree=()=>{ const t=$("programTree"); if(t) t.scrollIntoView({behavior:"smooth", block:"start"}); };
@@ -1517,14 +1525,51 @@ $("programTree").addEventListener("click", (e)=>{
 });
 $("tabHome").onclick = ()=> window.scrollTo({top:0, behavior:"smooth"});
 $("tabProg").onclick = jumpTree;
-$("tabSettings").onclick = ()=> $("settings").classList.remove("hidden");
-const openActions=()=>$("actionsSheet").classList.remove("hidden");
+$("tabSettings").onclick = ()=>{ _ensureTrap(); $("settings").classList.remove("hidden"); };
+const openActions=()=>{ _ensureTrap(); $("actionsSheet").classList.remove("hidden"); };
 const closeActions=()=>$("actionsSheet").classList.add("hidden");
 $("btnActions").onclick=openActions;
 $("tabActions").onclick=openActions;
-$("btnCloseActions").onclick=closeActions;
-$("actionsSheet").onclick=(e)=>{ if(e.target.id==="actionsSheet") closeActions(); };
-$("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.target.closest("button")) setTimeout(closeActions,60); });
+$("btnCloseActions").onclick=()=>_back();
+$("actionsSheet").onclick=(e)=>{ if(e.target.id==="actionsSheet") _back(); };
+$("actionsSheet").querySelector(".tiles").addEventListener("click",(e)=>{ if(e.target.closest("button")) setTimeout(()=>{ if(!$("actionsSheet").classList.contains("hidden")) _back(); },60); });
+
+/* ---------- Bouton retour matériel (Android) + navigation interne ---------- */
+// Empêche le navigateur de restaurer le scroll à 0 sur popstate (sinon il annule notre scroll).
+if('scrollRestoration' in history){ try{ history.scrollRestoration='manual'; }catch(e){} }
+function goToProgram(){
+  closeTimer();
+  renderHome();
+  // atterrir sur la liste des exercices (01, 02, 03…), pas en haut
+  var doScroll=function(){
+    var el=document.querySelector('.seances')||$("programTree");
+    if(el){ var y=el.getBoundingClientRect().top + window.pageYOffset - 6; window.scrollTo(0, Math.max(0,y)); }
+  };
+  doScroll();                 // immédiat (le DOM accueil est déjà construit)
+  setTimeout(doScroll, 60);   // filet de sécurité après reflow complet
+}
+var _trapActive=false;
+function _ensureTrap(){ if(!_trapActive){ try{ history.pushState({evolveBack:1},""); }catch(e){} _trapActive=true; } }
+function _atHome(){
+  return !$("viewHome").classList.contains("hidden")
+      && $("viewSession").classList.contains("hidden")
+      && $("timer").classList.contains("hidden")
+      && $("settings").classList.contains("hidden")
+      && $("actionsSheet").classList.contains("hidden");
+}
+function _handleBack(){
+  if(!$("timer").classList.contains("hidden")){ closeTimer(); return true; }
+  if(!$("settings").classList.contains("hidden")){ $("settings").classList.add("hidden"); return true; }
+  if(!$("actionsSheet").classList.contains("hidden")){ $("actionsSheet").classList.add("hidden"); return true; }
+  if(!$("viewSession").classList.contains("hidden")){ goToProgram(); return true; }
+  return false; // à l'accueil : on laisse l'app se fermer
+}
+function _back(){ if(_trapActive){ history.back(); } else { _handleBack(); } }
+window.addEventListener('popstate', function(){
+  _trapActive=false;
+  var handled=_handleBack();
+  if(handled && !_atHome()){ _ensureTrap(); } // ré-arme tant qu'on n'est pas à l'accueil
+});
 
 boot();
 /* anti-cache : service worker network-first => toujours la derniere version */
