@@ -550,6 +550,17 @@
   .setrow .cb svg{width:22px; height:22px}
   .setrow.checked{background:color-mix(in srgb, var(--neon) 12%, transparent); border-color:var(--neon)}
   .setrow.checked .cb{background:var(--neon); border-color:var(--neon); color:var(--primary)}
+
+  /* === CARTES COMPLÉTÉES — teinte bleue de la marque (mode clair + sombre via var(--neon)) === */
+  .scard.done{background:color-mix(in srgb, var(--neon) 12%, var(--card)); border-color:var(--neon)}
+  .scard.done .sc-title{color:var(--accent)}
+  .exrow.done{background:color-mix(in srgb, var(--neon) 12%, var(--card)); border-color:var(--neon)}
+  .exrow.done h3{color:var(--accent)}
+  .exitem.done{background:color-mix(in srgb, var(--neon) 12%, transparent)}
+  .exitem.done .exi-name{color:var(--accent)}
+  .exitem.done .exi-go{color:var(--neon)}
+  .wcard.done:not(.on){background:color-mix(in srgb, var(--neon) 13%, var(--card)); border-color:var(--neon)}
+  .wcard.done:not(.on) .wc-num{color:var(--accent)}
   .navbar{display:flex; gap:10px; margin-top:18px}
   .navbar button{flex:1}
 
@@ -999,6 +1010,8 @@ function sessionStats(sess){
   for(const ex of sess.exercises){ const s=getSets(ex); total+=s.length; done+=s.filter(Boolean).length; }
   return {total, done};
 }
+function sessDone(sess){ const st=sessionStats(sess); return st.total>0 && st.done===st.total; }
+function weekDone(wk){ return wk.sessions.length>0 && wk.sessions.every(sessDone); }
 
 /* ---------- Render HOME ---------- */
 const $ = (id)=>document.getElementById(id);
@@ -1042,7 +1055,7 @@ function renderProgramBrowser(tree){
   // CYCLE
   let cards="";
   weeks.forEach((w,i)=>{
-    cards += "<button type='button' class='wcard"+(i===browse.weekIdx?" on":"")+"' data-week='"+i+"'>"
+    cards += "<button type='button' class='wcard"+(i===browse.weekIdx?" on":"")+(weekDone(w)?" done":"")+"' data-week='"+i+"'>"
       +"<div class='wc-top'><span class='wc-sem'>SEM "+(i+1)+"</span><span class='wc-cnt'>"+w.sessions.length+" séances</span></div>"
       +"<div class='wc-num'>"+String(i+1).padStart(2,"0")+"</div>"
       +"<div class='wc-name'>"+esc(w.semaine)+"</div></button>";
@@ -1066,7 +1079,7 @@ function renderProgramBrowser(tree){
   let sList="";
   wk.sessions.forEach(s=>{
     const t=sessionTag(s);
-    sList += "<button type='button' class='scard"+(s.key===browse.sessKey?" on":"")+"' data-sess=\""+esc(s.key)+"\">"
+    sList += "<button type='button' class='scard"+(s.key===browse.sessKey?" on":"")+(sessDone(s)?" done":"")+"' data-sess=\""+esc(s.key)+"\">"
       +"<div class='sc-top'><span class='stag"+(t.warm?" warm":"")+"'>"+esc(t.tag)+"</span><span class='sc-ex'>"+s.exercises.length+" ex.</span></div>"
       +"<div class='sc-title'>"+esc(t.title)+"</div>"+(t.subtitle?"<div class='sc-sub'>"+esc(t.subtitle)+"</div>":"")+"</button>";
   });
@@ -1076,7 +1089,7 @@ function renderProgramBrowser(tree){
     cur2.exercises.forEach((ex,i)=>{
       const arr=getSets(ex); const dn=arr.filter(Boolean).length;
       const meta=[ex.rpe?("RPE "+esc(ex.rpe)):"", ex.repos?("REPOS "+ex.repos+"S"):""].filter(Boolean).join(" · ");
-      exHtml += "<button type='button' class='exitem' data-start=\""+esc(cur2.key)+"\" data-ix='"+i+"'>"
+      exHtml += "<button type='button' class='exitem"+(exDone(ex)?" done":"")+"' data-start=\""+esc(cur2.key)+"\" data-ix='"+i+"'>"
         +"<span class='exi-num'>"+String(i+1).padStart(2,"0")+"</span>"
         +"<div class='exi-main'><div class='exi-name'>"+esc(ex.exercice)+(meta?"<span class='exi-meta'>"+meta+"</span>":"")+"</div>"
           +"<div class='exi-chips'><span class='chip'>Séries<b>"+dn+"/"+ex.sets+"</b></span>"
@@ -1206,7 +1219,7 @@ function showPicker(sess){
     const s=getSets(ex); const dn=s.filter(Boolean).length; const tot=ex.sets;
     const pct=tot?Math.round(100*dn/tot):0; const cat=exCategory(ex);
     let lbl, act; if(dn===0){lbl="NON COMMENCÉ"; act=false;} else if(dn>=tot){lbl="TERMINÉ"; act=true;} else {lbl="PROGRESSION"; act=true;}
-    const card=document.createElement("div"); card.className="exrow"+(i===curIdx?" cur":"");
+    const card=document.createElement("div"); card.className="exrow"+(i===curIdx?" cur":"")+(exDone(ex)?" done":"");
     card.innerHTML=
       "<div class='exhead'><div class='exnum'>"+esc(ex.ordre||(i+1))+"</div>"
       +"<span class='excat"+(cat.sup?" sup":"")+"'>"+esc(cat.t)+"</span></div>"
