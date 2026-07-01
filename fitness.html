@@ -1273,7 +1273,10 @@ function muscleImg(ex){
   const n=(ex.exercice||"").toLowerCase();
   const has=(...k)=>k.some(x=>n.includes(x));
   if(has("trapèze","trapeze","shrug","haussement")) return {img:"muscles/traps.png", label:"Trapèzes"};
-  if(has("abdo"," abs","gainage","planche","plank","crunch","relevé","releve","core","pallof","oblique","anti-rotation","anti rotation","antirotation","woodchop","russian","twist","mountain climber","hollow")) return {img:"muscles/abs.png", label:"Abdominaux"};
+  if(has("pallof","oblique","anti-rotation","anti rotation","antirotation","woodchop","russian","twist")) return {img:"muscles/obliques.png", label:"Obliques Abdominaux"};
+  if(has("abdo"," abs","gainage","planche","plank","crunch","relevé","releve","core","mountain climber","hollow")) return {img:"muscles/abs.png", label:"Abdominaux"};
+  if(has("biceps","preacher","pupitre","concentration","marteau","hammer") || (has("curl") && !has("leg","jambe","ischio","mollet","cuisse","fessier"))) return {img:"muscles/biceps.png", label:"Biceps"};
+  if(has("triceps","barre au front","skull","pushdown","kickback","corde triceps","extension nuque")) return {img:"muscles/triceps.png", label:"Triceps"};
   if(has("épaule","epaule","militaire","overhead","latérale","laterale","oiseau","arnold","deltoïde","deltoide","face pull","nuque")) return {img:"muscles/shoulders.png", label:"Épaules"};
   if(has("jambe","squat","fente","presse","leg","mollet","ischio","quadri"," quad","hip","rdl","roumain","goblet","gobelet","cuisse","fessier")) return {img:"muscles/legs.png", label:"Jambes"};
   if(has("dos","traction","tirage","rowing"," row","soulevé de terre","souleve de terre","deadlift","pull","lat ","good morning")) return {img:"muscles/back.png", label:"Dos"};
