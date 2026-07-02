@@ -1430,6 +1430,8 @@ function paintTimer(){
 function startTimer(sec, ctx){
   stopTick();
   timer.dur=sec; timer.left=sec; timer.running=true;
+  timer.endAt = Date.now() + sec*1000;      // échéance absolue (résiste au throttling)
+  ensureAudio();                            // débloque l'audio pendant le geste utilisateur
   if(ctx){ $("rstTitle").textContent = ctx.title; $("rstSub").textContent = ctx.sub; }
   $("timer").classList.remove("hidden");
   setPauseBtn(true);
@@ -1439,7 +1441,7 @@ function tick(){
   stopTick();
   timer.h = setInterval(()=>{
     if(!timer.running) return;
-    timer.left -= 1;
+    timer.left = Math.max(0, Math.round((timer.endAt - Date.now())/1000)); // horloge réelle
     if(timer.left<=0){ timer.left=0; paintTimer(); timerDone(); return; }
     paintTimer();
   },1000);
@@ -1453,14 +1455,30 @@ function timerDone(){
   const t=$("timer"); t.classList.add("flash"); setTimeout(()=>t.classList.remove("flash"),2200);
   setTimeout(closeTimer, 1400);
 }
+/* Cloche fiable : contexte audio PARTAGÉ, débloqué au premier geste utilisateur.
+   (Un AudioContext créé hors geste démarre "suspended" sur mobile -> silence.) */
+let audioCtx=null;
+function ensureAudio(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx && audioCtx.state==="suspended") audioCtx.resume().catch(()=>{});
+  }catch(e){}
+  return audioCtx;
+}
+["pointerdown","touchstart","click"].forEach(ev=> document.addEventListener(ev, ensureAudio, {passive:true, capture:true}));
 function beep(){
   try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type="sine"; o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
-    g.gain.setValueAtTime(0.001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.4,ctx.currentTime+0.02);
-    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.45);
-    o.start(); o.stop(ctx.currentTime+0.5);
+    const ctx=ensureAudio(); if(!ctx) return;
+    const ding=()=>{
+      try{
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type="sine"; o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.4,ctx.currentTime+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.45);
+        o.start(); o.stop(ctx.currentTime+0.5);
+      }catch(e){}
+    };
+    if(ctx.state==="suspended"){ ctx.resume().then(ding).catch(ding); } else { ding(); }
   }catch(e){}
 }
 
@@ -1512,10 +1530,10 @@ $("btnNextEx").onclick = ()=> moveEx(1);
 $("btnPickEx").onclick = ()=>{ cur.exIndex=-1; renderSession(); };
 $("btnBackProgram").onclick = ()=> _back();
 // timer controls
-$("tPause").onclick = ()=>{ timer.running=!timer.running; setPauseBtn(timer.running); if(timer.running && !$("viewSession").classList.contains("hidden")) requestWake(); };
-$("tPlus").onclick = ()=>{ timer.left+=15; if(timer.left>timer.dur) timer.dur=timer.left; paintTimer(); };
-$("tMinus").onclick = ()=>{ timer.left=Math.max(0,timer.left-15); paintTimer(); };
-$("tReset").onclick = ()=>{ timer.left=timer.dur; timer.running=true; setPauseBtn(true); paintTimer(); };
+$("tPause").onclick = ()=>{ timer.running=!timer.running; if(timer.running){ timer.endAt=Date.now()+timer.left*1000; } setPauseBtn(timer.running); if(timer.running && !$("viewSession").classList.contains("hidden")) requestWake(); };
+$("tPlus").onclick = ()=>{ timer.left+=15; if(timer.left>timer.dur) timer.dur=timer.left; timer.endAt=Date.now()+timer.left*1000; paintTimer(); };
+$("tMinus").onclick = ()=>{ timer.left=Math.max(0,timer.left-15); timer.endAt=Date.now()+timer.left*1000; paintTimer(); };
+$("tReset").onclick = ()=>{ timer.left=timer.dur; timer.running=true; timer.endAt=Date.now()+timer.dur*1000; setPauseBtn(true); paintTimer(); };
 $("tSkip").onclick = ()=> _back();
 // thème clair / sombre
 $("btnTheme").onclick = async ()=>{
