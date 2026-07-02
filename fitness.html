@@ -887,8 +887,10 @@
    ============================================================ */
 
 // Schéma EXACT partagé template <-> app (ne JAMAIS renommer/réordonner)
-const HEADERS = ["Semaine","Session","Ordre Exercice","Exercice","Sets","Reps",
+const HEADERS = ["Semaine","Session","Ordre Exercice","Exercice","Muscle travaillé","Sets","Reps",
   "Poids Suggéré (kg)","Target RPE","Temps Repos (sec)","Notes"];
+// Colonnes non obligatoires : n'invalident pas les anciens fichiers au chargement
+const OPTIONAL_HEADERS = ["Muscle travaillé"];
 
 const INSTRUCTIONS = [
   ["Règles de progressive overload (référence agent fit)"],
@@ -898,6 +900,8 @@ const INSTRUCTIONS = [
   ["Cohérence : composés lourds / repos long ; isolation léger / reps en hausse."],
   ["RPE : 6-7 en sem 1, jusqu'à 8 en sem 2-3, 6 en déload."],
   ["4-5 exercices max / session ; varier les angles ; éviter les sessions identiques."],
+  [""],
+  ["Colonne « Muscle travaillé » (optionnelle) : indique le muscle pour afficher la bonne image. Valeurs reconnues : Pectoraux, Dos, Épaules, Trapèzes, Biceps, Triceps, Abdominaux, Obliques, Jambes. Si vide, l'image est déduite du nom de l'exercice."],
 ];
 
 /* ---------- IndexedDB minimal (1 clé 'state') ---------- */
@@ -984,7 +988,7 @@ function parseWorkbook(wb){
   if(!rows.length) throw new Error("La feuille « Programme » est vide.");
   const head = rows[0].map(x=>slug(x));
   // validation en-têtes exacts (présence + ordre)
-  const missing = HEADERS.filter(h=> !head.includes(h));
+  const missing = HEADERS.filter(h=> !OPTIONAL_HEADERS.includes(h) && !head.includes(h));
   if(missing.length) throw new Error("Colonne(s) manquante(s) : « "+missing.join(" », « ")+" ». Utilise le template généré.");
   const idx = {}; HEADERS.forEach(h=> idx[h]=head.indexOf(h));
   const dataRows = rows.slice(1).filter(r=> r.some(c=> String(c).trim()!==""));
@@ -1000,6 +1004,7 @@ function parseWorkbook(wb){
     sm.get(s).push({
       ordre: slug(r[idx["Ordre Exercice"]]),
       exercice: slug(r[idx["Exercice"]]),
+      muscle: (idx["Muscle travaillé"]>=0 ? slug(r[idx["Muscle travaillé"]]) : ""),
       sets: Math.max(1, parseInt(r[idx["Sets"]],10) || 1),
       reps: slug(r[idx["Reps"]]),
       poids: slug(r[idx["Poids Suggéré (kg)"]]),
@@ -1268,20 +1273,25 @@ function exCategory(ex){
   if(has("pdc","poids du corps","traction","pompe","gainage","planche","dips")) return {t:"POIDS DU CORPS", sup:false};
   return {t:"FORCE", sup:false};
 }
-// Déduit la partie du corps depuis le nom de l'exercice -> image figure (sans texte) + libellé
-function muscleImg(ex){
-  const n=(ex.exercice||"").toLowerCase();
+// Classe un texte (muscle explicite OU nom d'exercice) -> image figure + libellé, ou null si inconnu
+function classifyMuscle(text){
+  const n=(text||"").toLowerCase();
+  if(!n) return null;
   const has=(...k)=>k.some(x=>n.includes(x));
-  if(has("trapèze","trapeze","shrug","haussement")) return {img:"muscles/traps.png", label:"Trapèzes"};
+  if(has("trapèze","trapeze","traps","shrug","haussement")) return {img:"muscles/traps.png", label:"Trapèzes"};
   if(has("pallof","oblique","anti-rotation","anti rotation","antirotation","woodchop","russian","twist")) return {img:"muscles/obliques.png", label:"Obliques Abdominaux"};
-  if(has("abdo"," abs","gainage","planche","plank","crunch","relevé","releve","core","mountain climber","hollow")) return {img:"muscles/abs.png", label:"Abdominaux"};
+  if(has("abdo"," abs","abdomin","gainage","planche","plank","crunch","relevé","releve","core","mountain climber","hollow","ladybug","lady bug","dead bug","deadbug","bête à bon","coccinelle","ventre")) return {img:"muscles/abs.png", label:"Abdominaux"};
   if(has("biceps","preacher","pupitre","concentration","marteau","hammer") || (has("curl") && !has("leg","jambe","ischio","mollet","cuisse","fessier"))) return {img:"muscles/biceps.png", label:"Biceps"};
   if(has("triceps","barre au front","skull","pushdown","kickback","corde triceps","extension nuque")) return {img:"muscles/triceps.png", label:"Triceps"};
-  if(has("épaule","epaule","militaire","overhead","latérale","laterale","oiseau","arnold","deltoïde","deltoide","face pull","nuque")) return {img:"muscles/shoulders.png", label:"Épaules"};
-  if(has("jambe","squat","fente","presse","leg","mollet","ischio","quadri"," quad","hip","rdl","roumain","goblet","gobelet","cuisse","fessier")) return {img:"muscles/legs.png", label:"Jambes"};
-  if(has("dos","traction","tirage","rowing"," row","soulevé de terre","souleve de terre","deadlift","pull","lat ","good morning")) return {img:"muscles/back.png", label:"Dos"};
-  if(has("pec","couché","couche","bench","pompe","écarté","ecarte","dips","butterfly","incliné","incline")) return {img:"muscles/chest.png", label:"Pectoraux"};
-  return {img:"muscles/chest.png", label:"Pectoraux"};
+  if(has("épaule","epaule","shoulder","deltoïde","deltoide","militaire","overhead","latérale","laterale","oiseau","arnold","face pull","nuque")) return {img:"muscles/shoulders.png", label:"Épaules"};
+  if(has("jambe","leg","squat","fente","presse","mollet","ischio","quadri"," quad","hip","rdl","roumain","goblet","gobelet","cuisse","fessier","glute")) return {img:"muscles/legs.png", label:"Jambes"};
+  if(has("dos","back","dorsaux","dorsal","traction","tirage","rowing"," row","soulevé de terre","souleve de terre","deadlift","pull","lat ","good morning")) return {img:"muscles/back.png", label:"Dos"};
+  if(has("pec","chest","poitrine","couché","couche","bench","pompe","écarté","ecarte","dips","butterfly","incliné","incline")) return {img:"muscles/chest.png", label:"Pectoraux"};
+  return null;
+}
+// Image d'un exercice : priorité à la colonne « Muscle travaillé », sinon déduit du nom, sinon défaut
+function muscleImg(ex){
+  return classifyMuscle(ex&&ex.muscle) || classifyMuscle(ex&&ex.exercice) || {img:"muscles/chest.png", label:"Pectoraux"};
 }
 function showPicker(sess){
   $("exPicker").classList.remove("hidden"); $("exDetail").classList.add("hidden");
