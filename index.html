@@ -564,6 +564,7 @@
     background:color-mix(in srgb, var(--neon) 12%, transparent); border:1px solid var(--neon);
     border-radius:8px; padding:3px 10px; display:inline-flex; align-items:center; gap:6px}
   .exwedit:hover{background:color-mix(in srgb, var(--neon) 20%, transparent)}
+  .sessedit{margin:0 0 14px}
   .setrow .cb{width:44px; height:44px; flex:none; border-radius:50%; border:2px solid var(--outline); background:var(--card); display:flex; align-items:center; justify-content:center; color:var(--muted); transition:background .15s, border-color .15s, color .15s}
   .setrow .cb svg{width:22px; height:22px}
   .setrow.checked{background:color-mix(in srgb, var(--neon) 12%, transparent); border-color:var(--neon)}
@@ -789,6 +790,7 @@
     <!-- Liste d'exercices (ordre libre) -->
     <div id="exPicker">
       <p class="sub2">Choisis par quel exercice commencer (ordre libre) :</p>
+      <button type="button" id="btnSessEdit" class="exwedit sessedit" title="Modifier séries, reps et repos de tous les exercices">Séries · Reps · Repos — toute la séance <span class="pen">&#9998;</span></button>
       <div id="exTiles"></div>
     </div>
 
@@ -1051,6 +1053,32 @@ function getSets(ex){ // bool[]
 }
 function setSets(ex, arr){ const p = state.progress[ex.key] || {}; p.sets = arr; state.progress[ex.key] = p; }
 function exDone(ex){ return getSets(ex).every(Boolean); }
+/* ---- Édition séries / reps / repos (exercice individuel ou toute la séance) ---- */
+function resizeProgress(ex, newSets){ // préserve séries cochées + poids lors d'un changement de nombre de séries
+  const p = state.progress[ex.key];
+  if(!p) return;
+  if(Array.isArray(p.sets)){
+    const a = new Array(newSets).fill(false);
+    for(let i=0;i<Math.min(newSets,p.sets.length);i++) a[i]=p.sets[i];
+    p.sets = a;
+  }
+  if(Array.isArray(p.weights)){
+    const w = new Array(newSets).fill(null);
+    for(let i=0;i<Math.min(newSets,p.weights.length);i++) w[i]=p.weights[i];
+    p.weights = w;
+  }
+}
+function applyExParams(ex, o){ // o = {sets, reps, repos} — null/vide = inchangé
+  if(o.sets!=null && String(o.sets).trim()!==""){
+    const n = Math.max(1, parseInt(o.sets,10) || ex.sets);
+    if(n!==ex.sets){ resizeProgress(ex, n); ex.sets = n; }
+  }
+  if(o.reps!=null && String(o.reps).trim()!=="") ex.reps = slug(o.reps);
+  if(o.repos!=null && String(o.repos).trim()!==""){
+    const r = parseInt(o.repos,10);
+    if(!isNaN(r)) ex.repos = Math.max(0, r);
+  }
+}
 /* ---- Poids éditable (override par série / par exercice) ---- */
 function getWeights(ex){ // string[] longueur ex.sets ; retombe sur le poids du programme
   const base = ex.poids ? String(ex.poids) : "";
@@ -1295,6 +1323,7 @@ function muscleImg(ex){
 }
 function showPicker(sess){
   $("exPicker").classList.remove("hidden"); $("exDetail").classList.add("hidden");
+  const _bse = $("btnSessEdit"); if(_bse) _bse.onclick = ()=> editSessionParams(sess);
   const g = $("exTiles"); g.innerHTML="";
   const curIdx = sess.exercises.findIndex(ex=>!exDone(ex));
   sess.exercises.forEach((ex,i)=>{
@@ -1336,8 +1365,10 @@ function showExercise(sess, i){
     +"<div class='r'><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"</span></div></div>"
     +"<div class='exmeta2'><button type='button' class='exwedit' title=\"Modifier le poids de tout l'exercice\">"
       +(exWeightLabel(ex)?(esc(exWeightLabel(ex))+" kg"):"+ poids")+" <span class='pen'>&#9998;</span></button>"
-    +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")+(ex.repos?("<span>Repos "+ex.repos+" s</span>"):"")+"</div>";
-  const _exw = $("exMeta").querySelector(".exwedit"); if(_exw) _exw.onclick = ()=> editExerciseWeight(sess, i);
+    +"<button type='button' class='exwedit expedit' title='Modifier séries, reps et repos de cet exercice'>"+ex.sets+" × "+esc(ex.reps||"?")+(ex.repos?(" · "+ex.repos+" s"):"")+" <span class='pen'>&#9998;</span></button>"
+    +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")+"</div>";
+  const _exw = $("exMeta").querySelector(".exwedit:not(.expedit)"); if(_exw) _exw.onclick = ()=> editExerciseWeight(sess, i);
+  const _exp = $("exMeta").querySelector(".expedit"); if(_exp) _exp.onclick = ()=> editExerciseParams(sess, i);
   $("exNotes").textContent = ex.notes ? ("Note : "+ex.notes) : "";
   const arr = getSets(ex); const weights = getWeights(ex); const list=$("setList"); list.innerHTML="";
   arr.forEach((on,si)=>{
@@ -1390,6 +1421,34 @@ async function editExerciseWeight(sess, i){
   setWeightAll(ex, v.trim());
   await persist();
   showExercise(sess, i);
+}
+
+/* Édition séries / reps / repos — exercice individuel */
+async function editExerciseParams(sess, i){
+  const ex = sess.exercises[i];
+  const s = prompt("Nombre de séries pour « "+ex.exercice+" » :\nVide = inchangé.", ex.sets);
+  if(s===null) return;
+  const r = prompt("Répétitions pour « "+ex.exercice+" » :\nVide = inchangé.", ex.reps||"");
+  if(r===null) return;
+  const t = prompt("Temps de repos (secondes) pour « "+ex.exercice+" » :\nVide = inchangé.", ex.repos!=null?ex.repos:"");
+  if(t===null) return;
+  applyExParams(ex, {sets:s, reps:r, repos:t});
+  await persist();
+  showExercise(sess, i);
+  const st = sessionStats(sess); $("sessProgress").innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>"+st.done+"/"+st.total+" séries";
+}
+/* Édition séries / reps / repos — TOUTE la séance */
+async function editSessionParams(sess){
+  const s = prompt("Nombre de séries pour TOUS les exercices de la séance :\nVide = inchangé.", "");
+  if(s===null) return;
+  const r = prompt("Répétitions pour TOUS les exercices :\nVide = inchangé.", "");
+  if(r===null) return;
+  const t = prompt("Temps de repos (secondes) pour TOUS les exercices :\nVide = inchangé.", "");
+  if(t===null) return;
+  if(String(s).trim()==="" && String(r).trim()==="" && String(t).trim()==="") return;
+  for(const ex of sess.exercises) applyExParams(ex, {sets:s, reps:r, repos:t});
+  await persist();
+  renderSession();
 }
 
 /* navigation exercices (ordre libre, sans contrainte) */
