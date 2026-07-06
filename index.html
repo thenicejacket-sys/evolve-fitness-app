@@ -285,7 +285,7 @@
     --neon:#2e5bff; --neon-dim:#2348d8; --tert:#5b8cff;     /* marque bleu électrique */
     --primary:#ffffff; --on-pc:#1b2a6b;                     /* texte blanc sur le bleu */
     --accent:#2348d8;                                       /* bleu profond : texte/icône sur fond clair */
-    --dark:#131826; --danger:#ba1a1a;
+    --dark:#131826; --danger:#ba1a1a; --skip:#b26a00;
     --r-lg:18px; --r-md:14px; --r-sm:10px;
     --shadow:0 6px 22px rgba(24,22,16,.05);
     --shadow-hi:0 14px 36px rgba(24,22,16,.10);
@@ -301,6 +301,7 @@
     --line:#282d38; --outline:#586173; --outline-variant:#333a47;
     --neon-dim:#5b8cff;
     --accent:#5b8cff;        /* bleu clair lisible sur charcoal */
+    --skip:#ffb454;          /* ambre : série/exo passé (skip) */
     --dark:#131826;
     --shadow:none;
     --shadow-hi:0 14px 36px rgba(0,0,0,.55);
@@ -559,6 +560,13 @@
     border-bottom:1px dashed var(--outline); display:inline-flex; align-items:center; gap:6px}
   .setrow .setdata .sd-w.wedit:hover{color:var(--accent); border-bottom-color:var(--accent);
     background:color-mix(in srgb, var(--neon) 10%, transparent)}
+  /* Reps éditables par série : même affordance que le poids */
+  .setrow .setdata .sd-r.redit{font:inherit; font-weight:500; color:var(--muted); background:none;
+    border:none; padding:2px 6px; margin:-2px -6px; border-radius:7px; cursor:pointer;
+    border-bottom:1px dashed var(--outline-variant); display:inline-flex; align-items:center; gap:6px}
+  .setrow .setdata .sd-r.redit:hover{color:var(--accent); border-bottom-color:var(--accent);
+    background:color-mix(in srgb, var(--neon) 10%, transparent)}
+  .sd-r.redit .pen{font-size:12px; color:var(--accent); opacity:.8}
   .sd-w.wedit .pen, .exwedit .pen{font-size:12px; color:var(--accent); opacity:.8}
   .exwedit{font:inherit; font-size:13px; font-weight:600; color:var(--accent); cursor:pointer;
     background:color-mix(in srgb, var(--neon) 12%, transparent); border:1px solid var(--neon);
@@ -643,6 +651,26 @@
   [data-theme="dark"] .setrow .cb{ border-color:var(--outline); background:transparent; color:var(--muted); }
   [data-theme="dark"] .setrow.checked .cb{ color:#fff; }
   [data-theme="dark"] .switch{ background:var(--surface-high); }
+
+  /* ====== Skip (série/exercice passé : compté complété, non réalisé) ====== */
+  .setrow .sd-skip{flex:none; font:inherit; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--muted); background:none; border:1px solid var(--outline-variant); border-radius:999px;
+    padding:5px 10px; cursor:pointer; transition:color .15s, border-color .15s, background .15s}
+  .setrow .sd-skip:hover{color:var(--skip); border-color:var(--skip)}
+  .setrow.skipped{background:color-mix(in srgb, var(--skip) 10%, transparent); border-color:var(--skip); border-style:dashed}
+  .setrow.skipped .setdata .sd-w.wedit, .setrow.skipped .setdata .sd-r.redit{text-decoration:line-through}
+  .setrow.skipped .cb{background:color-mix(in srgb, var(--skip) 18%, transparent); border-color:var(--skip); color:var(--skip)}
+  .setrow.skipped .sd-skip{color:var(--skip); border-color:var(--skip); background:color-mix(in srgb, var(--skip) 14%, transparent)}
+  .exskip{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:12px;
+    font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:var(--surface-low);
+    border:1px dashed var(--outline-variant); border-radius:var(--r-md); padding:12px; cursor:pointer;
+    transition:color .15s, border-color .15s, background .15s}
+  .exskip:hover, .exskip.on{color:var(--skip); border-color:var(--skip); background:color-mix(in srgb, var(--skip) 10%, transparent)}
+  .exskip svg{width:18px; height:18px}
+  /* Tuiles Séries / Reps cliquables (édition directe, un seul prompt) */
+  .exinfo .r.redit{cursor:pointer; border:1px solid transparent; transition:border-color .15s}
+  .exinfo .r.redit:hover{border-color:var(--neon)}
+  .exinfo .r.redit .pen{font-size:12px; color:var(--accent); opacity:.8; margin-left:6px; vertical-align:middle}
 
   /* ====== CYCLE + SÉANCES (maquettes) ====== */
   .seclabel2{font-family:'Space Grotesk','Geist',sans-serif; font-size:clamp(22px,6.5vw,28px); font-weight:700;
@@ -802,6 +830,7 @@
         <h3 id="exName"></h3>
         <p class="muted" id="exMeta"></p>
         <div id="setList"></div>
+        <button type="button" id="btnSkipEx" class="exskip"></button>
         <p class="muted" id="exNotes"></p>
         </div>
       </div>
@@ -1067,13 +1096,22 @@ function resizeProgress(ex, newSets){ // préserve séries cochées + poids lors
     for(let i=0;i<Math.min(newSets,p.weights.length);i++) w[i]=p.weights[i];
     p.weights = w;
   }
+  if(Array.isArray(p.reps)){
+    const r = new Array(newSets).fill(null);
+    for(let i=0;i<Math.min(newSets,p.reps.length);i++) r[i]=p.reps[i];
+    p.reps = r;
+  }
 }
 function applyExParams(ex, o){ // o = {sets, reps, repos} — null/vide = inchangé
   if(o.sets!=null && String(o.sets).trim()!==""){
     const n = Math.max(1, parseInt(o.sets,10) || ex.sets);
     if(n!==ex.sets){ resizeProgress(ex, n); ex.sets = n; }
   }
-  if(o.reps!=null && String(o.reps).trim()!=="") ex.reps = slug(o.reps);
+  if(o.reps!=null && String(o.reps).trim()!==""){
+    ex.reps = slug(o.reps);
+    const p = state.progress[ex.key];
+    if(p && p.reps) delete p.reps; // efface les overrides par série pour rendre le changement visible
+  }
   if(o.repos!=null && String(o.repos).trim()!==""){
     const r = parseInt(o.repos,10);
     if(!isNaN(r)) ex.repos = Math.max(0, r);
@@ -1098,6 +1136,22 @@ function setWeight(ex, si, val){ // édite UNE série (val vide => retour au dé
 function setWeightAll(ex, val){ // édite TOUT l'exercice
   const p = state.progress[ex.key] || {};
   p.weights = new Array(ex.sets).fill((val===""||val==null) ? null : String(val));
+  if(!Array.isArray(p.sets) || p.sets.length!==ex.sets) p.sets = getSets(ex).slice();
+  state.progress[ex.key] = p;
+}
+/* ---- Reps éditables (override par série / par exercice) ---- */
+function getReps(ex){ // string[] longueur ex.sets ; retombe sur les reps du programme
+  const base = ex.reps ? String(ex.reps) : "";
+  const p = state.progress[ex.key];
+  if(p && Array.isArray(p.reps) && p.reps.length===ex.sets)
+    return p.reps.map(r => (r===null||r===undefined||r==="") ? base : String(r));
+  return new Array(ex.sets).fill(base);
+}
+function setRep(ex, si, val){ // édite UNE série (val vide => retour aux reps programme)
+  const p = state.progress[ex.key] || {};
+  let arr = (Array.isArray(p.reps) && p.reps.length===ex.sets) ? p.reps.slice() : new Array(ex.sets).fill(null);
+  arr[si] = (val===""||val==null) ? null : String(val);
+  p.reps = arr;
   if(!Array.isArray(p.sets) || p.sets.length!==ex.sets) p.sets = getSets(ex).slice();
   state.progress[ex.key] = p;
 }
@@ -1329,7 +1383,7 @@ function showPicker(sess){
   sess.exercises.forEach((ex,i)=>{
     const s=getSets(ex); const dn=s.filter(Boolean).length; const tot=ex.sets;
     const pct=tot?Math.round(100*dn/tot):0; const cat=exCategory(ex);
-    let lbl, act; if(dn===0){lbl="NON COMMENCÉ"; act=false;} else if(dn>=tot){lbl="TERMINÉ"; act=true;} else {lbl="PROGRESSION"; act=true;}
+    let lbl, act; if(dn===0){lbl="NON COMMENCÉ"; act=false;} else if(dn>=tot){lbl = s.every(v=>v==="skip") ? "PASSÉ" : "TERMINÉ"; act=true;} else {lbl="PROGRESSION"; act=true;}
     const card=document.createElement("div"); card.className="exrow"+(i===curIdx?" cur":"")+(exDone(ex)?" done":"");
     card.innerHTML=
       "<div class='exhead'><div class='exnum'>"+esc(ex.ordre||(i+1))+"</div>"
@@ -1361,26 +1415,41 @@ function showExercise(sess, i){
   $("exFig").classList.toggle("has-video", !!(VIDSET[part] && !isLight));
   $("exName").innerHTML = esc(ex.exercice)+"<span class='excat'>"+(iso?"ISOLATION":"COMPOUND")+"</span>";
   $("exMeta").innerHTML =
-    "<div class='exinfo'><div class='r'><span class='k'>Séries</span><span class='v'>"+ex.sets+"</span></div>"
-    +"<div class='r'><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"</span></div></div>"
+    "<div class='exinfo'><div class='r redit' id='exEditSets' title='Modifier le nombre de séries'><span class='k'>Séries</span><span class='v'>"+ex.sets+"<span class='pen'>&#9998;</span></span></div>"
+    +"<div class='r redit' id='exEditReps' title='Modifier les répétitions de tout l&#8217;exercice'><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"<span class='pen'>&#9998;</span></span></div></div>"
     +"<div class='exmeta2'><button type='button' class='exwedit' title=\"Modifier le poids de tout l'exercice\">"
       +(exWeightLabel(ex)?(esc(exWeightLabel(ex))+" kg"):"+ poids")+" <span class='pen'>&#9998;</span></button>"
-    +"<button type='button' class='exwedit expedit' title='Modifier séries, reps et repos de cet exercice'>"+ex.sets+" × "+esc(ex.reps||"?")+(ex.repos?(" · "+ex.repos+" s"):"")+" <span class='pen'>&#9998;</span></button>"
+    +"<button type='button' class='exwedit tedit' title='Modifier le temps de repos'>Repos "+(ex.repos!=null?ex.repos+" s":"—")+" <span class='pen'>&#9998;</span></button>"
     +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")+"</div>";
-  const _exw = $("exMeta").querySelector(".exwedit:not(.expedit)"); if(_exw) _exw.onclick = ()=> editExerciseWeight(sess, i);
-  const _exp = $("exMeta").querySelector(".expedit"); if(_exp) _exp.onclick = ()=> editExerciseParams(sess, i);
+  const _exw = $("exMeta").querySelector(".exwedit:not(.tedit)"); if(_exw) _exw.onclick = ()=> editExerciseWeight(sess, i);
+  const _ext = $("exMeta").querySelector(".tedit"); if(_ext) _ext.onclick = ()=> editExerciseRest(sess, i);
+  const _exs = $("exEditSets"); if(_exs) _exs.onclick = ()=> editExerciseSets(sess, i);
+  const _exr = $("exEditReps"); if(_exr) _exr.onclick = ()=> editExerciseReps(sess, i);
   $("exNotes").textContent = ex.notes ? ("Note : "+ex.notes) : "";
-  const arr = getSets(ex); const weights = getWeights(ex); const list=$("setList"); list.innerHTML="";
+  const arr = getSets(ex); const weights = getWeights(ex); const reps = getReps(ex); const list=$("setList"); list.innerHTML="";
+  const SKIP_SVG = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M4 5l7 7-7 7'/><path d='M13 5l7 7-7 7'/></svg>";
   arr.forEach((on,si)=>{
-    const r=document.createElement("div"); r.className="setrow"+(on?" checked":"");
+    const skipped = (on==="skip");
+    const r=document.createElement("div"); r.className="setrow"+(on===true?" checked":"")+(skipped?" skipped":"");
     const w = weights[si];
     r.innerHTML = "<span class='setno'>"+(si+1)+"</span>"
-      +"<div class='setdata'><button type='button' class='sd-w wedit' title='Modifier le poids de cette série'>"+(w?esc(w)+" kg":"+ poids")+" <span class='pen'>&#9998;</span></button><span class='sd-r'>"+esc(ex.reps||"?")+" reps</span></div>"
-      +"<span class='cb'>"+(on?"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>":"")+"</span>";
+      +"<div class='setdata'><button type='button' class='sd-w wedit' title='Modifier le poids de cette série'>"+(w?esc(w)+" kg":"+ poids")+" <span class='pen'>&#9998;</span></button>"
+      +"<button type='button' class='sd-r redit' title='Modifier les reps de cette série'>"+esc(reps[si]||"?")+" reps <span class='pen'>&#9998;</span></button></div>"
+      +"<button type='button' class='sd-skip' title='"+(skipped?"Annuler le skip (remettre à blanc)":"Passer cette série : comptée comme complétée, non réalisée")+"'>Skip</button>"
+      +"<span class='cb'>"+(on===true?"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>":"")+(skipped?SKIP_SVG:"")+"</span>";
     r.onclick = ()=> toggleSet(sess, i, si);
     r.querySelector(".wedit").onclick = (e)=>{ e.stopPropagation(); editSeriesWeight(sess, i, si); };
+    r.querySelector(".redit").onclick = (e)=>{ e.stopPropagation(); editSeriesReps(sess, i, si); };
+    r.querySelector(".sd-skip").onclick = (e)=>{ e.stopPropagation(); toggleSkipSet(sess, i, si); };
     list.appendChild(r);
   });
+  const _skx = $("btnSkipEx");
+  if(_skx){
+    const anySkip = arr.some(v=>v==="skip");
+    _skx.className = "exskip"+(anySkip?" on":"");
+    _skx.innerHTML = SKIP_SVG + (anySkip ? "Annuler le skip — remettre à blanc" : "Skipper l'exercice (marqué complété, non réalisé)");
+    _skx.onclick = ()=> toggleSkipExercise(sess, i);
+  }
 }
 async function toggleSet(sess, i, si){
   const ex = sess.exercises[i];
@@ -1423,19 +1492,66 @@ async function editExerciseWeight(sess, i){
   showExercise(sess, i);
 }
 
-/* Édition séries / reps / repos — exercice individuel */
-async function editExerciseParams(sess, i){
+/* Compteur de progression de la séance (sous-barre) */
+function paintSessProgress(sess){
+  const st = sessionStats(sess);
+  $("sessProgress").innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>"+st.done+"/"+st.total+" séries";
+}
+/* Édition des reps — par série */
+async function editSeriesReps(sess, i, si){
   const ex = sess.exercises[i];
-  const s = prompt("Nombre de séries pour « "+ex.exercice+" » :\nVide = inchangé.", ex.sets);
-  if(s===null) return;
-  const r = prompt("Répétitions pour « "+ex.exercice+" » :\nVide = inchangé.", ex.reps||"");
-  if(r===null) return;
-  const t = prompt("Temps de repos (secondes) pour « "+ex.exercice+" » :\nVide = inchangé.", ex.repos!=null?ex.repos:"");
-  if(t===null) return;
-  applyExParams(ex, {sets:s, reps:r, repos:t});
+  const cur = getReps(ex)[si] || "";
+  const v = prompt("Reps — série "+(si+1)+" de « "+ex.exercice+" »\nLaisse vide pour revenir aux reps programme :", cur);
+  if(v===null) return;
+  setRep(ex, si, v.trim());
   await persist();
   showExercise(sess, i);
-  const st = sessionStats(sess); $("sessProgress").innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>"+st.done+"/"+st.total+" séries";
+}
+/* Éditions ciblées — un seul prompt chacune */
+async function editExerciseSets(sess, i){
+  const ex = sess.exercises[i];
+  const v = prompt("Nombre de séries pour « "+ex.exercice+" » :", ex.sets);
+  if(v===null || String(v).trim()==="") return;
+  applyExParams(ex, {sets:v});
+  await persist();
+  showExercise(sess, i);
+  paintSessProgress(sess);
+}
+async function editExerciseReps(sess, i){
+  const ex = sess.exercises[i];
+  const v = prompt("Répétitions pour tout l'exercice « "+ex.exercice+" » :", ex.reps||"");
+  if(v===null || String(v).trim()==="") return;
+  applyExParams(ex, {reps:v});
+  await persist();
+  showExercise(sess, i);
+}
+async function editExerciseRest(sess, i){
+  const ex = sess.exercises[i];
+  const v = prompt("Temps de repos (secondes) pour « "+ex.exercice+" » :", ex.repos!=null?ex.repos:"");
+  if(v===null || String(v).trim()==="") return;
+  applyExParams(ex, {repos:v});
+  await persist();
+  showExercise(sess, i);
+}
+/* Skip — série ou exercice : marqué comme complété mais non réalisé ; re-appui = remise à blanc */
+async function toggleSkipSet(sess, i, si){
+  const ex = sess.exercises[i];
+  const arr = getSets(ex).slice();
+  arr[si] = (arr[si]==="skip") ? false : "skip";
+  setSets(ex, arr);
+  await persist();
+  showExercise(sess, i);
+  paintSessProgress(sess);
+}
+async function toggleSkipExercise(sess, i){
+  const ex = sess.exercises[i];
+  let arr = getSets(ex).slice();
+  if(arr.some(v=>v==="skip")) arr = arr.map(v => v==="skip" ? false : v); // remise à blanc des séries skippées
+  else arr = arr.map(v => v===true ? true : "skip");                     // les séries déjà faites restent faites
+  setSets(ex, arr);
+  await persist();
+  showExercise(sess, i);
+  paintSessProgress(sess);
 }
 /* Édition séries / reps / repos — TOUTE la séance */
 async function editSessionParams(sess){
