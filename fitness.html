@@ -662,12 +662,23 @@
   [data-theme="dark"] .setrow.checked .cb{ color:#fff; }
   [data-theme="dark"] .switch{ background:var(--surface-high); }
 
-  /* ---- RPE ressenti (chip par série) ---- */
-  .setrow .sd-rpe{flex:none; font:inherit; font-size:11px; font-weight:700; letter-spacing:.04em;
-    color:var(--accent); background:color-mix(in srgb, var(--neon) 12%, transparent);
-    border:1px solid transparent; border-radius:999px; padding:5px 10px; cursor:pointer;
-    transition:border-color .15s}
-  .setrow .sd-rpe:hover{border-color:var(--neon)}
+  /* ---- RPE ressenti (saisi une fois, à la fin du bloc d'exercice) ---- */
+  .exmeta2 .rpedit{color:var(--accent); background:color-mix(in srgb, var(--neon) 10%, transparent)}
+  .rpemodal{position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px)}
+  .rpe-card{display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:380px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow);
+    padding:28px 22px 18px; text-align:center; animation:rpePop .22s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes rpePop{from{opacity:0; transform:translateY(16px) scale(.95)} to{opacity:1; transform:none}}
+  .rpe-ex{margin:0; font-size:15px; font-weight:600; color:var(--muted); letter-spacing:-.01em; line-height:1.3}
+  .rpe-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; width:100%; margin-top:4px}
+  .rpe-grid button{aspect-ratio:1; font:inherit; font-size:18px; font-weight:800; color:var(--ink);
+    background:var(--surface-low); border:1px solid var(--outline-variant); border-radius:var(--r-md); cursor:pointer;
+    transition:transform .12s, background .12s, color .12s, border-color .12s, box-shadow .12s}
+  .rpe-grid button:hover{border-color:var(--neon); transform:translateY(-2px)}
+  .rpe-grid button.on{background:var(--neon); color:var(--primary); border-color:var(--neon); box-shadow:0 8px 20px rgba(46,91,255,.4)}
+  .rpe-skip{font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer; padding:8px 12px}
+  .rpe-skip:hover{color:var(--ink)}
 
   /* ====== Skip (série/exercice passé : compté complété, non réalisé) ====== */
   .setrow .sd-skip{flex:none; font:inherit; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
@@ -889,6 +900,16 @@
   </div>
 </div>
 
+<!-- RPE ressenti — modale de fin de bloc -->
+<div id="rpeModal" class="rpemodal hidden" role="dialog" aria-modal="true">
+  <div class="rpe-card">
+    <span class="rst-pill">RPE ressenti</span>
+    <h3 class="rpe-ex" id="rpeExName"></h3>
+    <div class="rpe-grid" id="rpeGrid"></div>
+    <button type="button" class="rpe-skip" id="rpeSkip">Passer</button>
+  </div>
+</div>
+
 <!-- SETTINGS overlay -->
 <div id="settings" class="timer hidden" style="background:rgba(18,22,12,.45); justify-content:flex-start; padding-top:80px">
   <div class="card" style="width:100%; max-width:420px; text-align:left">
@@ -1059,7 +1080,7 @@ function buildBilanWorkbook(){
     [""],
     ["« Bilan séries » : 1 ligne par série. Colonnes « prévu(es) » = plan initial de l'agent ; « effectives / utilisé / ressenti » = ce que l'utilisateur a réellement fait ou ajusté."],
     ["Statut « Skippée » = série marquée complétée mais NON réalisée (blessure, manque de temps) : ne pas compter comme volume accompli ; alléger ou remplacer l'exercice concerné."],
-    ["RPE ressenti (1 facile → 10 échec) : s'il dépasse le Target RPE, la charge était trop lourde → réduire le poids ou le volume. S'il est nettement en dessous, il y a de la marge pour progresser."],
+    ["RPE ressenti (1 facile → 10 échec) : saisi UNE fois par bloc d'exercice à la fin de celui-ci (même valeur répétée sur chaque série). S'il dépasse le Target RPE, la charge était trop lourde → réduire le poids ou le volume. S'il est nettement en dessous, il y a de la marge pour progresser."],
     ["Poids utilisé < poids prévu = la charge proposée était trop lourde pour cet exercice ; partir du poids utilisé comme nouvelle référence."],
     ["Reps effectives ≠ reps prévues = l'utilisateur a ajusté : prendre les reps effectives comme base."],
     ["« Programme ajusté » : le programme courant avec toutes les modifications utilisateur, au format EXACT du template — utilisable directement comme base du prochain cycle."],
@@ -1231,31 +1252,44 @@ function setRep(ex, si, val){ // édite UNE série (val vide => retour aux reps 
   if(!Array.isArray(p.sets) || p.sets.length!==ex.sets) p.sets = getSets(ex).slice();
   state.progress[ex.key] = p;
 }
-/* ---- RPE ressenti (par série, saisi à la validation) ---- */
+/* ---- RPE ressenti (un par bloc d'exercice, demandé à la fin du bloc) ---- */
 function getRpes(ex){ // string[] longueur ex.sets ("" = non renseigné)
   const p = state.progress[ex.key];
   if(p && Array.isArray(p.rpes) && p.rpes.length===ex.sets)
     return p.rpes.map(v => (v===null||v===undefined) ? "" : String(v));
   return new Array(ex.sets).fill("");
 }
-function setRpe(ex, si, val){
+function getExRpe(ex){ // RPE du bloc (valeur unique répliquée sur les séries) ; "" = non renseigné
+  const v = getRpes(ex).find(x=>x);
+  return v || "";
+}
+function setRpeAll(ex, val){ // applique le RPE du bloc à toutes les séries (export bilan inchangé)
   const p = state.progress[ex.key] || {};
-  let arr = (Array.isArray(p.rpes) && p.rpes.length===ex.sets) ? p.rpes.slice() : new Array(ex.sets).fill(null);
-  arr[si] = (val===""||val==null) ? null : String(val);
-  p.rpes = arr;
+  p.rpes = new Array(ex.sets).fill((val===""||val==null) ? null : String(val));
   if(!Array.isArray(p.sets) || p.sets.length!==ex.sets) p.sets = getSets(ex).slice();
   state.progress[ex.key] = p;
 }
-function askRpe(ex, si){ // prompt 1-10 ; null = annulé, "" = non renseigné
-  const cur = getRpes(ex)[si] || "";
-  let v = prompt("RPE ressenti — série "+(si+1)+" de « "+ex.exercice+" » ?\n1 = très facile … 10 = échec musculaire. Vide = non renseigné."
-    +(ex.rpe?("\n(Target RPE du programme : "+ex.rpe+")"):""), cur);
-  if(v===null) return null;
-  v = v.trim().replace(",",".");
-  if(v==="") return "";
-  const n = parseFloat(v);
-  if(isNaN(n)) return "";
-  return String(Math.min(10, Math.max(1, n)));
+let rpeResolve = null;
+function openRpeModal(ex){ // Promise<string|null> — "1".."10" choisi, null = passé/fermé
+  return new Promise(res=>{
+    if(rpeResolve){ const r=rpeResolve; rpeResolve=null; r(null); } // sécurité : une seule modale à la fois
+    rpeResolve = res;
+    $("rpeExName").textContent = ex.exercice || "";
+    const cur = getExRpe(ex);
+    const g = $("rpeGrid"); g.innerHTML = "";
+    for(let n=1; n<=10; n++){
+      const b = document.createElement("button"); b.type="button"; b.textContent = n;
+      if(String(n)===cur) b.classList.add("on");
+      b.onclick = ()=> closeRpeModal(String(n));
+      g.appendChild(b);
+    }
+    $("rpeModal").classList.remove("hidden");
+  });
+}
+function closeRpeModal(val){
+  $("rpeModal").classList.add("hidden");
+  const r = rpeResolve; rpeResolve = null;
+  if(r) r(val);
 }
 function exWeightLabel(ex){ // valeur si homogène, sinon "Variable"
   const ws = getWeights(ex);
@@ -1522,13 +1556,15 @@ function showExercise(sess, i){
     +"<div class='exmeta2'><button type='button' class='exwedit' title=\"Modifier le poids de tout l'exercice\">"
       +(exWeightLabel(ex)?(esc(exWeightLabel(ex))+" kg"):"+ poids")+" <span class='pen'>&#9998;</span></button>"
     +"<button type='button' class='exwedit tedit' title='Modifier le temps de repos'>Repos "+(ex.repos!=null?ex.repos+" s":"—")+" <span class='pen'>&#9998;</span></button>"
-    +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")+"</div>";
+    +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")
+    +"<button type='button' class='exwedit rpedit' title='RPE ressenti du bloc (1-10)'>"+(getExRpe(ex)?("Ressenti "+esc(getExRpe(ex))):"+ Ressenti")+" <span class='pen'>&#9998;</span></button></div>";
   const _exw = $("exMeta").querySelector(".exwedit:not(.tedit)"); if(_exw) _exw.onclick = ()=> editExerciseWeight(sess, i);
   const _ext = $("exMeta").querySelector(".tedit"); if(_ext) _ext.onclick = ()=> editExerciseRest(sess, i);
+  const _exq = $("exMeta").querySelector(".rpedit"); if(_exq) _exq.onclick = ()=> editExerciseRpe(sess, i);
   const _exs = $("exEditSets"); if(_exs) _exs.onclick = ()=> editExerciseSets(sess, i);
   const _exr = $("exEditReps"); if(_exr) _exr.onclick = ()=> editExerciseReps(sess, i);
   $("exNotes").textContent = ex.notes ? ("Note : "+ex.notes) : "";
-  const arr = getSets(ex); const weights = getWeights(ex); const reps = getReps(ex); const rpes = getRpes(ex); const list=$("setList"); list.innerHTML="";
+  const arr = getSets(ex); const weights = getWeights(ex); const reps = getReps(ex); const list=$("setList"); list.innerHTML="";
   const SKIP_SVG = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M4 5l7 7-7 7'/><path d='M13 5l7 7-7 7'/></svg>";
   arr.forEach((on,si)=>{
     const skipped = (on==="skip");
@@ -1536,14 +1572,12 @@ function showExercise(sess, i){
     const w = weights[si];
     r.innerHTML = "<span class='setno'>"+(si+1)+"</span>"
       +"<div class='setdata'><button type='button' class='sd-w wedit' title='Modifier le poids de cette série'>"+(w?esc(w)+" kg":"+ poids")+" <span class='pen'>&#9998;</span></button>"
-      +"<button type='button' class='sd-r redit' title='Modifier les reps de cette série'>"+esc(reps[si]||"?")+" reps <span class='pen'>&#9998;</span></button>"
-      +((on===true||rpes[si])?"<button type='button' class='sd-rpe' title='Modifier le RPE ressenti de cette série'>RPE "+(rpes[si]?esc(rpes[si]):"?")+"</button>":"")+"</div>"
+      +"<button type='button' class='sd-r redit' title='Modifier les reps de cette série'>"+esc(reps[si]||"?")+" reps <span class='pen'>&#9998;</span></button></div>"
       +"<button type='button' class='sd-skip' title='"+(skipped?"Annuler le skip (remettre à blanc)":"Passer cette série : comptée comme complétée, non réalisée")+"'>Skip</button>"
       +"<span class='cb'>"+(on===true?"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>":"")+(skipped?SKIP_SVG:"")+"</span>";
     r.onclick = ()=> toggleSet(sess, i, si);
     r.querySelector(".wedit").onclick = (e)=>{ e.stopPropagation(); editSeriesWeight(sess, i, si); };
     r.querySelector(".redit").onclick = (e)=>{ e.stopPropagation(); editSeriesReps(sess, i, si); };
-    const _rp = r.querySelector(".sd-rpe"); if(_rp) _rp.onclick = (e)=>{ e.stopPropagation(); editSeriesRpe(sess, i, si); };
     r.querySelector(".sd-skip").onclick = (e)=>{ e.stopPropagation(); toggleSkipSet(sess, i, si); };
     list.appendChild(r);
   });
@@ -1561,11 +1595,10 @@ async function toggleSet(sess, i, si){
   const wasOn = arr[si];
   arr[si] = !arr[si];
   setSets(ex, arr);
-  if(wasOn && !arr[si]) setRpe(ex, si, ""); // série décochée => RPE ressenti effacé
   await persist();
   showExercise(sess, i);
   paintSessProgress(sess);
-  // Cocher (passer à complété) => timer de repos + saisie du RPE ressenti
+  // Cocher (passer à complété) => timer de repos ; RPE ressenti demandé UNE fois, à la fin du bloc
   if(!wasOn && arr[si]){
     if(ex.repos>0){
       const total=arr.length, done=arr.filter(Boolean).length, nextN=Math.min(done+1,total), last=done>=total;
@@ -1574,8 +1607,10 @@ async function toggleSet(sess, i, si){
         sub: last ? "Dernière série terminée — bravo" : ("Série "+nextN+" / "+total + (ex.reps?(" · "+ex.reps+" reps"):""))
       });
     }
-    const v = askRpe(ex, si); // le repos défile pendant la saisie
-    if(v!==null && v!==""){ setRpe(ex, si, v); await persist(); showExercise(sess, i); }
+    if(exDone(ex) && !getExRpe(ex)){ // bloc terminé => saisie du RPE (le repos défile pendant)
+      const v = await openRpeModal(ex);
+      if(v){ setRpeAll(ex, v); await persist(); showExercise(sess, i); }
+    }
   }
 }
 
@@ -1605,12 +1640,12 @@ function paintSessProgress(sess){
   const st = sessionStats(sess);
   $("sessProgress").innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>"+st.done+"/"+st.total+" séries";
 }
-/* Édition du RPE ressenti — par série */
-async function editSeriesRpe(sess, i, si){
+/* Édition du RPE ressenti — par bloc d'exercice */
+async function editExerciseRpe(sess, i){
   const ex = sess.exercises[i];
-  const v = askRpe(ex, si);
+  const v = await openRpeModal(ex);
   if(v===null) return;
-  setRpe(ex, si, v);
+  setRpeAll(ex, v);
   await persist();
   showExercise(sess, i);
 }
@@ -1659,6 +1694,11 @@ async function toggleSkipSet(sess, i, si){
   await persist();
   showExercise(sess, i);
   paintSessProgress(sess);
+  // Skip qui termine le bloc (avec au moins une série réellement faite) => saisie du RPE
+  if(arr[si]==="skip" && exDone(ex) && arr.some(v=>v===true) && !getExRpe(ex)){
+    const v = await openRpeModal(ex);
+    if(v){ setRpeAll(ex, v); await persist(); showExercise(sess, i); }
+  }
 }
 async function toggleSkipExercise(sess, i){
   const ex = sess.exercises[i];
@@ -1828,6 +1868,8 @@ $("tPlus").onclick = ()=>{ timer.left+=15; if(timer.left>timer.dur) timer.dur=ti
 $("tMinus").onclick = ()=>{ timer.left=Math.max(0,timer.left-15); timer.endAt=Date.now()+timer.left*1000; paintTimer(); };
 $("tReset").onclick = ()=>{ timer.left=timer.dur; timer.running=true; timer.endAt=Date.now()+timer.dur*1000; setPauseBtn(true); paintTimer(); };
 $("tSkip").onclick = ()=> _back();
+$("rpeSkip").onclick = ()=> closeRpeModal(null);
+$("rpeModal").addEventListener("click", (e)=>{ if(e.target.id==="rpeModal") closeRpeModal(null); });
 // thème clair / sombre
 $("btnTheme").onclick = async ()=>{
   state.settings.theme = (state.settings.theme === "dark") ? "light" : "dark";
