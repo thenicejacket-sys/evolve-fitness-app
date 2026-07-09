@@ -556,7 +556,6 @@
   .exinfo .r .v{font-size:19px; font-weight:700}
   .exmeta2{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 2px}
   .exmeta2 span{background:var(--surface-low); color:var(--muted); font-size:12px; font-weight:500; padding:5px 11px; border-radius:999px}
-  #exNotes{color:var(--muted); font-size:13px; margin-top:12px}
 
   /* ---- Lignes de série ---- */
   .setrow{display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--line); border-radius:var(--r-md); margin:10px 0; background:var(--surface-low); cursor:pointer; transition:background .15s, border-color .15s}
@@ -699,6 +698,15 @@
   .exinfo .r.redit{cursor:pointer; border:1px solid transparent; transition:border-color .15s}
   .exinfo .r.redit:hover{border-color:var(--neon)}
   .exinfo .r.redit .pen{font-size:12px; color:var(--accent); opacity:.8; margin-left:6px; vertical-align:middle}
+
+  /* ====== Mémoire d'éditions — surbrillance rosée sur les occurrences futures ====== */
+  /* Un champ édité une semaine passe en rosé dans les semaines suivantes ; le survol (title) affiche la valeur éditée, comme une légende Excel. */
+  .edited-hint{ background:color-mix(in srgb, #ff5d8f 18%, transparent) !important;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, #ff5d8f 55%, transparent); border-radius:8px; cursor:help; }
+  .edited-hint .pen{ color:#ff5d8f !important; opacity:1; }
+  .sd-w.wedit.edited-hint, .sd-r.redit.edited-hint{ border-bottom-color:#ff5d8f !important; }
+  [data-theme="dark"] .edited-hint{ background:color-mix(in srgb, #ff5d8f 26%, transparent) !important;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, #ff7ea8 60%, transparent); }
 
   /* ====== CYCLE + SÉANCES (maquettes) ====== */
   .seclabel2{font-family:'Space Grotesk','Geist',sans-serif; font-size:clamp(22px,6.5vw,28px); font-weight:700;
@@ -859,7 +867,6 @@
         <p class="muted" id="exMeta"></p>
         <div id="setList"></div>
         <button type="button" id="btnSkipEx" class="exskip"></button>
-        <p class="muted" id="exNotes"></p>
         </div>
       </div>
       <div class="navbar">
@@ -993,14 +1000,15 @@ const DB = (()=>{
 })();
 
 /* ---------- State ---------- */
-let state = { program:null, progress:{}, settings:{keepAwake:true, theme:"dark"} };
+let state = { program:null, progress:{}, edits:{}, settings:{keepAwake:true, theme:"dark"} };
 // program = { weeks:[ {semaine, sessions:[ {session, key, exercises:[ {ordre,exercice,sets,reps,poids,rpe,repos,notes,key} ] } ] } ] }
 let cur = { sessionKey:null, exIndex:0 };
 
 async function persist(){ await DB.set("state", state); }
 async function boot(){
   const s = await DB.get("state");
-  if(s){ state = Object.assign({program:null,progress:{},settings:{keepAwake:true,theme:"dark"}}, s); }
+  if(s){ state = Object.assign({program:null,progress:{},edits:{},settings:{keepAwake:true,theme:"dark"}}, s); }
+  if(!state.edits || typeof state.edits!=="object") state.edits = {};
   // Premier lancement : suivre la préférence système (clair/sombre). Ensuite, le choix manuel est persisté.
   if(!s || !(s.settings && s.settings.theme)){
     state.settings.theme = "dark";
@@ -1158,6 +1166,7 @@ async function handleFile(file){
     // Charger un nouveau programme REMPLACE l'ancien + efface la progression
     state.program = program;
     state.progress = {};
+    state.edits = {};
     cur = {sessionKey:null, exIndex:0};
     await persist();
     renderHome();
@@ -1563,7 +1572,6 @@ function showExercise(sess, i){
   const _exq = $("exMeta").querySelector(".rpedit"); if(_exq) _exq.onclick = ()=> editExerciseRpe(sess, i);
   const _exs = $("exEditSets"); if(_exs) _exs.onclick = ()=> editExerciseSets(sess, i);
   const _exr = $("exEditReps"); if(_exr) _exr.onclick = ()=> editExerciseReps(sess, i);
-  $("exNotes").textContent = ex.notes ? ("Note : "+ex.notes) : "";
   const arr = getSets(ex); const weights = getWeights(ex); const reps = getReps(ex); const list=$("setList"); list.innerHTML="";
   const SKIP_SVG = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M4 5l7 7-7 7'/><path d='M13 5l7 7-7 7'/></svg>";
   arr.forEach((on,si)=>{
