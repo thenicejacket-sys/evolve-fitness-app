@@ -678,6 +678,17 @@
   .rpe-grid button.on{background:var(--neon); color:var(--primary); border-color:var(--neon); box-shadow:0 8px 20px rgba(46,91,255,.4)}
   .rpe-skip{font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer; padding:8px 12px}
   .rpe-skip:hover{color:var(--ink)}
+  /* ---- Modale lien (Google Sheets) ---- */
+  .lm-text{margin:0; font-size:13px; color:var(--muted); text-align:center; line-height:1.5}
+  .lm-input{width:100%; font:inherit; font-size:14px; color:var(--ink); background:var(--surface-low);
+    border:1px solid var(--line); border-radius:12px; padding:12px 14px; outline:none; min-width:0}
+  .lm-input:focus{border-color:var(--neon)}
+  .lm-err{width:100%; font-size:13px; color:#e5484d; text-align:center; line-height:1.4}
+  .lm-ok{width:100%}
+  .lm-open{display:block; width:100%; text-align:center; font-size:14px; font-weight:700; color:var(--neon);
+    text-decoration:none; padding:12px 14px; border:1px solid var(--line); border-radius:12px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap}
+  .lm-open:hover{border-color:var(--neon)}
 
   /* ====== Skip (série/exercice passé : compté complété, non réalisé) ====== */
   .setrow .sd-skip{flex:none; font:inherit; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
@@ -917,6 +928,20 @@
   </div>
 </div>
 
+<!-- Lien Google Sheets — modale de saisie / résultat (chargement manuel uniquement, jamais automatique) -->
+<div id="linkModal" class="rpemodal hidden" role="dialog" aria-modal="true">
+  <div class="rpe-card">
+    <span class="rst-pill" id="lmPill">Google Sheets</span>
+    <h3 class="rpe-ex" id="lmTitle"></h3>
+    <p class="lm-text" id="lmText"></p>
+    <input type="url" id="lmInput" class="lm-input" autocomplete="off" spellcheck="false" />
+    <a id="lmOpen" class="lm-open hidden" target="_blank" rel="noopener"></a>
+    <div class="lm-err hidden" id="lmErr"></div>
+    <button type="button" class="primary lm-ok" id="lmOk">Valider</button>
+    <button type="button" class="rpe-skip" id="lmCancel">Annuler</button>
+  </div>
+</div>
+
 <!-- SETTINGS overlay -->
 <div id="settings" class="timer hidden" style="background:rgba(18,22,12,.45); justify-content:flex-start; padding-top:80px">
   <div class="card" style="width:100%; max-width:420px; text-align:left">
@@ -936,8 +961,10 @@
     <p class="muted" style="margin:0 0 16px; font-size:13px">Charge un programme, génère le template, télécharge le bilan pour l'agent, ou réinitialise ta progression.</p>
     <div class="tiles">
       <button class="tile accent" id="btnLoad"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><b>Charger</b><span>Fichier .xlsx</span></button>
+      <button class="tile accent" id="btnLoadLink"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span><b>Charger lien</b><span>Google Sheets</span></button>
       <button class="tile" id="btnTemplate"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></span><b>Template</b><span>Excel vide</span></button>
-      <button class="tile" id="btnExportBilan"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/></svg></span><b>Télécharger</b><span>Bilan pour l'agent</span></button>
+      <button class="tile" id="btnExportBilan"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/></svg></span><b>Télécharger</b><span>Bilan Excel (.xlsx)</span></button>
+      <button class="tile" id="btnExportSheets"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10M8.5 9.5 12 13l3.5-3.5"/><path d="M4 14a8 8 0 0 0 16 0"/></svg></span><b>Bilan → Sheets</b><span>Lien dans ton Drive</span></button>
       <button class="tile" id="btnProgramJump"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg></span><b>Programme</b><span>Toutes les séances</span></button>
       <button class="tile" id="btnResetProg"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 5v4h4"/></svg></span><b>Réinitialiser</b><span>Progression à zéro</span></button>
     </div>
@@ -1104,6 +1131,53 @@ function downloadBilan(){
   XLSX.writeFile(buildBilanWorkbook(), "fitness_bilan_"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+".xlsx");
 }
 
+/* ---- Export bilan → Google Sheets (via script Apps Script personnel, voir apps-script/) ----
+   L'URL du script est saisie UNE fois par l'utilisateur et stockée uniquement sur cet appareil
+   (localStorage) — jamais dans le code : l'app est partagée et le repo public. */
+const GS_ENDPOINT_KEY = "evolve.gsEndpoint";
+async function exportBilanToSheets(){
+  if(!state.program){ showErr("Charge d'abord un programme avant d'exporter un bilan."); _back(); return; }
+  let ep = (localStorage.getItem(GS_ENDPOINT_KEY)||"").trim();
+  if(!ep){
+    const cfg = await openLinkModal({
+      pill:"Configuration (une seule fois)", title:"Ton script Drive",
+      text:"Colle l'URL de ton script Google Apps Script (mode d'emploi : dossier apps-script du projet). Elle reste stockée uniquement sur cet appareil.",
+      placeholder:"https://script.google.com/macros/s/…/exec", ok:"Enregistrer",
+      action:async v=>{ if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(v.trim())) throw new Error("Ce n'est pas une URL de script Google (elle commence par https://script.google.com/…)."); }
+    });
+    if(!cfg) return;
+    ep = cfg.value.trim();
+    localStorage.setItem(GS_ENDPOINT_KEY, ep);
+  }
+  const wb = buildBilanWorkbook();
+  const d=new Date(), p=n=>String(n).padStart(2,"0");
+  const payload = {
+    name: "Evolve bilan "+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()),
+    sheets: wb.SheetNames.map(n=>({ name:n, rows: XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, defval:""}) }))
+  };
+  const done = await openLinkModal({
+    pill:"Google Sheets", title:"Exporter le bilan",
+    text:"Le bilan complet (prévu vs réalisé, RPE, poids) sera créé dans TON Drive. Appuie sur Exporter.",
+    ok:"Exporter", noInput:true,
+    action:async ()=>{
+      let res;
+      try{
+        res = await fetch(ep, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload)});
+      }catch(e){
+        localStorage.removeItem(GS_ENDPOINT_KEY); // auto-réparation : l'URL sera redemandée au prochain essai
+        throw new Error("Script injoignable. Vérifie ta connexion ; si l'URL du script était fausse, elle a été effacée et sera redemandée au prochain essai.");
+      }
+      let out = null;
+      try{ out = await res.json(); }catch(e){}
+      if(!res.ok || !out || out.ok!==true || !out.url){
+        throw new Error("Le script a répondu une erreur"+(out && out.error ? " : "+out.error : "")+". Vérifie le déploiement (accès « Tout le monde »).");
+      }
+      return out.url;
+    }
+  });
+  if(done && typeof done==="object" && done.result){ await showLinkDone(done.result); }
+}
+
 /* ---------- Chargement / parsing programme ---------- */
 function slug(s){ return String(s).trim().replace(/\s+/g," "); }
 function exKey(w,s,o,e){ return [slug(w),slug(s),slug(o),slug(e)].join("||"); }
@@ -1157,22 +1231,51 @@ function parseWorkbook(wb){
   return { weeks };
 }
 
+async function applyWorkbook(wb){
+  // CSV / classeur à onglet unique : le parseur exige l'onglet « Programme »
+  if(!wb.Sheets["Programme"] && wb.SheetNames.length===1) wb.Sheets["Programme"] = wb.Sheets[wb.SheetNames[0]];
+  const program = parseWorkbook(wb);
+  // Charger un nouveau programme REMPLACE l'ancien + efface la progression
+  state.program = program;
+  state.progress = {};
+  state.edits = {};
+  cur = {sessionKey:null, exIndex:0};
+  await persist();
+  renderHome();
+}
 async function handleFile(file){
   clearErr();
   try{
     const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, {type:"array"});
-    const program = parseWorkbook(wb);
-    // Charger un nouveau programme REMPLACE l'ancien + efface la progression
-    state.program = program;
-    state.progress = {};
-    state.edits = {};
-    cur = {sessionKey:null, exIndex:0};
-    await persist();
-    renderHome();
+    await applyWorkbook(XLSX.read(buf, {type:"array"}));
   }catch(e){
     showErr(e.message || String(e));
   }
+}
+
+/* ---- Chargement par lien : Google Sheets partagé « via le lien » (ou URL CSV directe en secours).
+   Transfert UNIQUE au clic — les données vivent ensuite en local (IndexedDB), aucune synchro. ---- */
+function sheetsCsvUrl(raw){
+  const u = String(raw||"").trim();
+  if(!u) return null;
+  const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/);
+  if(m){
+    const gid = (u.match(/[#?&]gid=(\d+)/)||[])[1];
+    return "https://docs.google.com/spreadsheets/d/"+m[1]+"/gviz/tq?tqx=out:csv"+(gid ? "&gid="+gid : "");
+  }
+  if(/^https?:\/\//i.test(u)) return u; // URL CSV directe
+  return null;
+}
+async function loadFromLink(raw){
+  const url = sheetsCsvUrl(raw);
+  if(!url) throw new Error("Lien non reconnu. Colle l'URL complète du Google Sheets.");
+  let res;
+  try{ res = await fetch(url, {redirect:"follow"}); }
+  catch(e){ throw new Error("Accès impossible. Vérifie ta connexion et que le partage du Sheet est « Tous les utilisateurs disposant du lien »."); }
+  if(!res.ok) throw new Error("Le document a répondu "+res.status+". Vérifie que le partage du Sheet est « Tous les utilisateurs disposant du lien ».");
+  const text = (await res.text()).replace(/^\uFEFF/, ""); // strip BOM éventuel
+  if(/<html/i.test(text.slice(0,500))) throw new Error("Ce lien renvoie une page web, pas des données. Vérifie le partage du Sheet (« Tous les utilisateurs disposant du lien »).");
+  await applyWorkbook(XLSX.read(text, {type:"string"}));
 }
 
 /* ---------- Progress helpers ---------- */
@@ -1300,6 +1403,69 @@ function closeRpeModal(val){
   const r = rpeResolve; rpeResolve = null;
   if(r) r(val);
 }
+
+/* ---- Modale lien générique (saisie URL + action asynchrone) ----
+   Résout null si annulée, sinon {value, result}. En cas d'échec de l'action,
+   la modale reste ouverte et affiche l'erreur (pas de prompt navigateur). */
+let lmResolve = null;
+function openLinkModal(o){
+  return new Promise(res=>{
+    if(lmResolve){ const r=lmResolve; lmResolve=null; r(null); } // une seule modale à la fois
+    lmResolve = res;
+    const inp=$("lmInput"), ok=$("lmOk"), err=$("lmErr"), open=$("lmOpen");
+    $("lmPill").textContent = o.pill || "Google Sheets";
+    $("lmTitle").textContent = o.title || "";
+    $("lmText").textContent = o.text || "";
+    err.textContent=""; err.classList.add("hidden");
+    open.classList.add("hidden");
+    inp.readOnly=false; inp.value=o.value||""; inp.placeholder=o.placeholder||"";
+    inp.classList.toggle("hidden", !!o.noInput);
+    ok.disabled=false; ok.textContent = o.ok || "Valider";
+    $("lmCancel").textContent = "Annuler";
+    const close=(v)=>{ $("linkModal").classList.add("hidden"); const r=lmResolve; lmResolve=null; if(r) r(v); };
+    $("lmCancel").onclick = ()=> close(null);
+    inp.onkeydown = (e)=>{ if(e.key==="Enter"){ e.preventDefault(); ok.click(); } };
+    ok.onclick = async ()=>{
+      const v = o.noInput ? "" : inp.value.trim();
+      if(!o.noInput && !v){ err.textContent="Colle un lien d'abord."; err.classList.remove("hidden"); return; }
+      const lbl = ok.textContent;
+      ok.disabled=true; ok.textContent="Un instant…"; err.classList.add("hidden");
+      try{
+        const result = o.action ? await o.action(v) : undefined;
+        ok.disabled=false; ok.textContent=lbl;
+        close({value:v, result:result});
+      }catch(e){
+        ok.disabled=false; ok.textContent=lbl;
+        err.textContent = e.message || String(e);
+        err.classList.remove("hidden");
+      }
+    };
+    $("linkModal").classList.remove("hidden");
+    if(!o.noInput) setTimeout(()=>inp.focus(), 60);
+  });
+}
+function showLinkDone(url){ // affiche le lien du Sheet créé : ouvrir + copier
+  return new Promise(res=>{
+    if(lmResolve){ const r=lmResolve; lmResolve=null; r(null); }
+    lmResolve = res;
+    const inp=$("lmInput"), ok=$("lmOk"), err=$("lmErr"), open=$("lmOpen");
+    $("lmPill").textContent="Google Sheets";
+    $("lmTitle").textContent="Bilan exporté ✓";
+    $("lmText").textContent="Ton bilan est dans ton Drive (dossier « Evolve Bilans »). Ouvre-le ou copie le lien pour le PC :";
+    inp.classList.add("hidden");
+    err.textContent=""; err.classList.add("hidden");
+    open.textContent=url; open.href=url; open.classList.remove("hidden");
+    ok.disabled=false; ok.textContent="Copier le lien";
+    $("lmCancel").textContent="Fermer";
+    const close=()=>{ $("linkModal").classList.add("hidden"); const r=lmResolve; lmResolve=null; if(r) r(null); };
+    $("lmCancel").onclick = close;
+    ok.onclick = async ()=>{
+      try{ await navigator.clipboard.writeText(url); ok.textContent="Copié ✓"; }
+      catch(e){ err.textContent="Copie impossible — utilise le lien ci-dessus."; err.classList.remove("hidden"); }
+    };
+    $("linkModal").classList.remove("hidden");
+  });
+}
 function exWeightLabel(ex){ // valeur si homogène, sinon "Variable"
   const ws = getWeights(ex);
   const uniq = [...new Set(ws.map(w => String(w||"")))];
@@ -1414,9 +1580,11 @@ function renderHome(){
   if(!state.program){
     $("homeStatus").textContent="Prêt à t'entraîner ? Génère un template, remplis-le, puis charge-le.";
     dash.innerHTML="<div class='empty'><div class='glow'></div><span class='prot-label'>Aucun programme</span>"
-      +"<h3>Charge ta séance</h3><p>Importe un fichier .xlsx rempli pour démarrer ton suivi.</p>"
-      +"<button class='primary' id='emptyLoad'>Charger un .xlsx</button></div>";
+      +"<h3>Charge ta séance</h3><p>Importe un fichier .xlsx rempli, ou colle un lien Google Sheets, pour démarrer ton suivi.</p>"
+      +"<button class='primary' id='emptyLoad'>Charger un .xlsx</button>"
+      +"<button class='primary' id='emptyLoadLink' style='margin-top:10px'>Charger un lien Google Sheets</button></div>";
     const el=$("emptyLoad"); if(el) el.onclick=()=>$("fileInput").click();
+    const el2=$("emptyLoadLink"); if(el2) el2.onclick=()=>$("btnLoadLink").onclick();
     $("homeActions").classList.add("hidden");
     return;
   }
@@ -1541,9 +1709,48 @@ function showPicker(sess){
     g.appendChild(card);
   });
 }
+/* ---- Mémoire d'éditions : rappel rosé sur les occurrences futures du même exercice ----
+   Indexée par session||exercice (stable d'une semaine à l'autre). Enregistre la DERNIÈRE
+   valeur éditée + l'index de la semaine où elle a été faite. Une semaine postérieure dont la
+   valeur affichée diffère de cette dernière édition est surlignée en rosé (tooltip = légende). */
+function editId(sess, ex){ return slug(sess.session)+"||"+slug(ex.exercice); }
+function weekIndexOf(sess){
+  if(!state.program) return -1;
+  return state.program.weeks.findIndex(wk => wk.sessions.some(s => s.key===sess.key));
+}
+function recordEdit(sess, ex, field, value){
+  const edits = state.edits || (state.edits = {});
+  const id = editId(sess, ex);
+  const m = edits[id] || (edits[id] = {});
+  const v = (value==null ? "" : String(value).trim());
+  if(v===""){ delete m[field]; if(!Object.keys(m).length) delete edits[id]; return; } // retour au défaut = plus de rappel
+  const wi = weekIndexOf(sess);
+  const wk = wi>=0 ? state.program.weeks[wi] : null;
+  m[field] = { v:v, wi:wi, wl: wk ? wk.semaine : "" };
+}
+function editRec(sess, ex, field, displayed, curWi){ // rec si un rappel doit s'afficher, sinon null
+  const m = (state.edits||{})[editId(sess, ex)];
+  const rec = m && m[field];
+  if(!rec || rec.v==="" || rec.wi<0 || rec.wi>=curWi) return null;         // seulement les semaines POSTÉRIEURES à l'édition
+  if(String(displayed==null?"":displayed).trim()===String(rec.v)) return null; // déjà à la bonne valeur = rien à rappeler
+  return rec;
+}
+const HINT_FMT = { weight:v=>v+" kg", reps:v=>v+" reps", sets:v=>v+" séries", repos:v=>v+" s", rpe:v=>"ressenti "+v };
+function hintBits(rec, field){ // {cls, attr} à interpoler dans le HTML
+  if(!rec) return {cls:"", attr:""};
+  const fmt = HINT_FMT[field] || (v=>v);
+  return {cls:" edited-hint", attr:" title=\""+esc("Semaine « "+rec.wl+" » : modifié à "+fmt(rec.v))+"\""};
+}
+function hintNote(sess, ex, field){ // suffixe de prompt (accès mobile à la légende)
+  const rec = editRec(sess, ex, field, " ", weekIndexOf(sess)); // displayed impossible => rec si édition antérieure existe
+  if(!rec) return "";
+  const fmt = HINT_FMT[field] || (v=>v);
+  return "\n(Semaine « "+rec.wl+" » tu avais mis "+fmt(rec.v)+")";
+}
 function showExercise(sess, i){
   $("exPicker").classList.add("hidden"); $("exDetail").classList.remove("hidden");
   const ex = sess.exercises[i];
+  const curWi = weekIndexOf(sess);
   const iso=/curl|élévation|elevation|écart|ecart|extension|oiseau|mollet|leg curl|leg extension/.test(ex.exercice.toLowerCase());
   const m=muscleImg(ex);
   var MPOS={chest:"50% 26%",back:"50% 30%",shoulders:"50% 14%",traps:"50% 12%",abs:"50% 40%",legs:"50% 70%"};
@@ -1559,14 +1766,19 @@ function showExercise(sess, i){
     +"<span class='exb-pill exb-num'>Exercice "+(i+1)+" / "+sess.exercises.length+"</span>";
   $("exFig").classList.toggle("has-video", !!(VIDSET[part] && !isLight));
   $("exName").innerHTML = esc(ex.exercice)+"<span class='excat'>"+(iso?"ISOLATION":"COMPOUND")+"</span>";
+  const hSets = hintBits(editRec(sess,ex,"sets", ex.sets, curWi), "sets");
+  const hReps = hintBits(editRec(sess,ex,"reps", ex.reps, curWi), "reps");
+  const hWgt  = hintBits(editRec(sess,ex,"weight", exWeightLabel(ex), curWi), "weight");
+  const hRst  = hintBits(editRec(sess,ex,"repos", ex.repos, curWi), "repos");
+  const hRpe  = hintBits(editRec(sess,ex,"rpe", getExRpe(ex), curWi), "rpe");
   $("exMeta").innerHTML =
-    "<div class='exinfo'><div class='r redit' id='exEditSets' title='Modifier le nombre de séries'><span class='k'>Séries</span><span class='v'>"+ex.sets+"<span class='pen'>&#9998;</span></span></div>"
-    +"<div class='r redit' id='exEditReps' title='Modifier les répétitions de tout l&#8217;exercice'><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"<span class='pen'>&#9998;</span></span></div></div>"
-    +"<div class='exmeta2'><button type='button' class='exwedit' title=\"Modifier le poids de tout l'exercice\">"
+    "<div class='exinfo'><div class='r redit"+hSets.cls+"' id='exEditSets'"+(hSets.attr||" title='Modifier le nombre de séries'")+"><span class='k'>Séries</span><span class='v'>"+ex.sets+"<span class='pen'>&#9998;</span></span></div>"
+    +"<div class='r redit"+hReps.cls+"' id='exEditReps'"+(hReps.attr||" title='Modifier les répétitions de tout l&#8217;exercice'")+"><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"<span class='pen'>&#9998;</span></span></div></div>"
+    +"<div class='exmeta2'><button type='button' class='exwedit"+hWgt.cls+"'"+(hWgt.attr||" title=\"Modifier le poids de tout l'exercice\"")+">"
       +(exWeightLabel(ex)?(esc(exWeightLabel(ex))+" kg"):"+ poids")+" <span class='pen'>&#9998;</span></button>"
-    +"<button type='button' class='exwedit tedit' title='Modifier le temps de repos'>Repos "+(ex.repos!=null?ex.repos+" s":"—")+" <span class='pen'>&#9998;</span></button>"
+    +"<button type='button' class='exwedit tedit"+hRst.cls+"'"+(hRst.attr||" title='Modifier le temps de repos'")+">Repos "+(ex.repos!=null?ex.repos+" s":"—")+" <span class='pen'>&#9998;</span></button>"
     +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")
-    +"<button type='button' class='exwedit rpedit' title='RPE ressenti du bloc (1-10)'>"+(getExRpe(ex)?("Ressenti "+esc(getExRpe(ex))):"+ Ressenti")+" <span class='pen'>&#9998;</span></button></div>";
+    +"<button type='button' class='exwedit rpedit"+hRpe.cls+"'"+(hRpe.attr||" title='RPE ressenti du bloc (1-10)'")+">"+(getExRpe(ex)?("Ressenti "+esc(getExRpe(ex))):"+ Ressenti")+" <span class='pen'>&#9998;</span></button></div>";
   const _exw = $("exMeta").querySelector(".exwedit:not(.tedit)"); if(_exw) _exw.onclick = ()=> editExerciseWeight(sess, i);
   const _ext = $("exMeta").querySelector(".tedit"); if(_ext) _ext.onclick = ()=> editExerciseRest(sess, i);
   const _exq = $("exMeta").querySelector(".rpedit"); if(_exq) _exq.onclick = ()=> editExerciseRpe(sess, i);
@@ -1578,9 +1790,11 @@ function showExercise(sess, i){
     const skipped = (on==="skip");
     const r=document.createElement("div"); r.className="setrow"+(on===true?" checked":"")+(skipped?" skipped":"");
     const w = weights[si];
+    const hsw = hintBits(editRec(sess,ex,"weight", w, curWi), "weight");
+    const hsr = hintBits(editRec(sess,ex,"reps", reps[si], curWi), "reps");
     r.innerHTML = "<span class='setno'>"+(si+1)+"</span>"
-      +"<div class='setdata'><button type='button' class='sd-w wedit' title='Modifier le poids de cette série'>"+(w?esc(w)+" kg":"+ poids")+" <span class='pen'>&#9998;</span></button>"
-      +"<button type='button' class='sd-r redit' title='Modifier les reps de cette série'>"+esc(reps[si]||"?")+" reps <span class='pen'>&#9998;</span></button></div>"
+      +"<div class='setdata'><button type='button' class='sd-w wedit"+hsw.cls+"'"+(hsw.attr||" title='Modifier le poids de cette série'")+">"+(w?esc(w)+" kg":"+ poids")+" <span class='pen'>&#9998;</span></button>"
+      +"<button type='button' class='sd-r redit"+hsr.cls+"'"+(hsr.attr||" title='Modifier les reps de cette série'")+">"+esc(reps[si]||"?")+" reps <span class='pen'>&#9998;</span></button></div>"
       +"<button type='button' class='sd-skip' title='"+(skipped?"Annuler le skip (remettre à blanc)":"Passer cette série : comptée comme complétée, non réalisée")+"'>Skip</button>"
       +"<span class='cb'>"+(on===true?"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>":"")+(skipped?SKIP_SVG:"")+"</span>";
     r.onclick = ()=> toggleSet(sess, i, si);
@@ -1626,9 +1840,10 @@ async function toggleSet(sess, i, si){
 async function editSeriesWeight(sess, i, si){
   const ex = sess.exercises[i];
   const cur = getWeights(ex)[si] || "";
-  const v = prompt("Poids — série "+(si+1)+" de « "+ex.exercice+" » (kg)\nLaisse vide pour revenir au poids programme :", cur);
+  const v = prompt("Poids — série "+(si+1)+" de « "+ex.exercice+" » (kg)\nLaisse vide pour revenir au poids programme :"+hintNote(sess,ex,"weight"), cur);
   if(v===null) return;                 // annulé : rien ne change
   setWeight(ex, si, v.trim());
+  recordEdit(sess, ex, "weight", v.trim());
   await persist();
   showExercise(sess, i);
 }
@@ -1636,9 +1851,10 @@ async function editSeriesWeight(sess, i, si){
 async function editExerciseWeight(sess, i){
   const ex = sess.exercises[i];
   const lbl = exWeightLabel(ex);
-  const v = prompt("Poids de TOUT l'exercice « "+ex.exercice+" » (kg)\nS'applique à toutes les séries. Vide = poids programme :", lbl==="Variable" ? "" : lbl);
+  const v = prompt("Poids de TOUT l'exercice « "+ex.exercice+" » (kg)\nS'applique à toutes les séries. Vide = poids programme :"+hintNote(sess,ex,"weight"), lbl==="Variable" ? "" : lbl);
   if(v===null) return;
   setWeightAll(ex, v.trim());
+  recordEdit(sess, ex, "weight", v.trim());
   await persist();
   showExercise(sess, i);
 }
@@ -1654,6 +1870,7 @@ async function editExerciseRpe(sess, i){
   const v = await openRpeModal(ex);
   if(v===null) return;
   setRpeAll(ex, v);
+  recordEdit(sess, ex, "rpe", v);
   await persist();
   showExercise(sess, i);
 }
@@ -1661,35 +1878,39 @@ async function editExerciseRpe(sess, i){
 async function editSeriesReps(sess, i, si){
   const ex = sess.exercises[i];
   const cur = getReps(ex)[si] || "";
-  const v = prompt("Reps — série "+(si+1)+" de « "+ex.exercice+" »\nLaisse vide pour revenir aux reps programme :", cur);
+  const v = prompt("Reps — série "+(si+1)+" de « "+ex.exercice+" »\nLaisse vide pour revenir aux reps programme :"+hintNote(sess,ex,"reps"), cur);
   if(v===null) return;
   setRep(ex, si, v.trim());
+  recordEdit(sess, ex, "reps", v.trim());
   await persist();
   showExercise(sess, i);
 }
 /* Éditions ciblées — un seul prompt chacune */
 async function editExerciseSets(sess, i){
   const ex = sess.exercises[i];
-  const v = prompt("Nombre de séries pour « "+ex.exercice+" » :", ex.sets);
+  const v = prompt("Nombre de séries pour « "+ex.exercice+" » :"+hintNote(sess,ex,"sets"), ex.sets);
   if(v===null || String(v).trim()==="") return;
   applyExParams(ex, {sets:v});
+  recordEdit(sess, ex, "sets", v);
   await persist();
   showExercise(sess, i);
   paintSessProgress(sess);
 }
 async function editExerciseReps(sess, i){
   const ex = sess.exercises[i];
-  const v = prompt("Répétitions pour tout l'exercice « "+ex.exercice+" » :", ex.reps||"");
+  const v = prompt("Répétitions pour tout l'exercice « "+ex.exercice+" » :"+hintNote(sess,ex,"reps"), ex.reps||"");
   if(v===null || String(v).trim()==="") return;
   applyExParams(ex, {reps:v});
+  recordEdit(sess, ex, "reps", v);
   await persist();
   showExercise(sess, i);
 }
 async function editExerciseRest(sess, i){
   const ex = sess.exercises[i];
-  const v = prompt("Temps de repos (secondes) pour « "+ex.exercice+" » :", ex.repos!=null?ex.repos:"");
+  const v = prompt("Temps de repos (secondes) pour « "+ex.exercice+" » :"+hintNote(sess,ex,"repos"), ex.repos!=null?ex.repos:"");
   if(v===null || String(v).trim()==="") return;
   applyExParams(ex, {repos:v});
+  recordEdit(sess, ex, "repos", v);
   await persist();
   showExercise(sess, i);
 }
@@ -1727,7 +1948,12 @@ async function editSessionParams(sess){
   const t = prompt("Temps de repos (secondes) pour TOUS les exercices :\nVide = inchangé.", "");
   if(t===null) return;
   if(String(s).trim()==="" && String(r).trim()==="" && String(t).trim()==="") return;
-  for(const ex of sess.exercises) applyExParams(ex, {sets:s, reps:r, repos:t});
+  for(const ex of sess.exercises){
+    applyExParams(ex, {sets:s, reps:r, repos:t});
+    if(String(s).trim()!=="") recordEdit(sess, ex, "sets", s);
+    if(String(r).trim()!=="") recordEdit(sess, ex, "reps", r);
+    if(String(t).trim()!=="") recordEdit(sess, ex, "repos", t);
+  }
   await persist();
   renderSession();
 }
@@ -1862,9 +2088,19 @@ function clearErr(){ $("loadErr").innerHTML=""; }
 /* ---------- Events ---------- */
 $("btnTemplate").onclick = downloadTemplate;
 $("btnExportBilan").onclick = downloadBilan;
+$("btnExportSheets").onclick = exportBilanToSheets;
 $("btnLoad").onclick = ()=> $("fileInput").click();
+$("btnLoadLink").onclick = async ()=>{ // fetch UNIQUEMENT sur ce clic — jamais automatique
+  clearErr();
+  await openLinkModal({
+    pill:"Google Sheets", title:"Charger un programme",
+    text:"Colle le lien du Google Sheets (partagé « Tous les utilisateurs disposant du lien »). Le programme est téléchargé une fois puis stocké en local sur cet appareil — remplace le programme et la progression actuels.",
+    placeholder:"https://docs.google.com/spreadsheets/…", ok:"Charger",
+    action: loadFromLink
+  });
+};
 $("fileInput").onchange = (e)=>{ const f=e.target.files[0]; if(f) handleFile(f); e.target.value=""; };
-$("btnResetProg").onclick = async ()=>{ if(confirm("Réinitialiser toute la progression ? (le programme est conservé)")){ state.progress={}; await persist(); renderHome(); } };
+$("btnResetProg").onclick = async ()=>{ if(confirm("Réinitialiser toute la progression ? (le programme est conservé)")){ state.progress={}; state.edits={}; await persist(); renderHome(); } };
 $("btnBackHome").onclick = ()=> _back();
 $("btnPrevEx").onclick = ()=> moveEx(-1);
 $("btnNextEx").onclick = ()=> moveEx(1);
@@ -1878,6 +2114,7 @@ $("tReset").onclick = ()=>{ timer.left=timer.dur; timer.running=true; timer.endA
 $("tSkip").onclick = ()=> _back();
 $("rpeSkip").onclick = ()=> closeRpeModal(null);
 $("rpeModal").addEventListener("click", (e)=>{ if(e.target.id==="rpeModal") closeRpeModal(null); });
+$("linkModal").addEventListener("click", (e)=>{ if(e.target.id==="linkModal") $("lmCancel").click(); });
 // thème clair / sombre
 $("btnTheme").onclick = async ()=>{
   state.settings.theme = (state.settings.theme === "dark") ? "light" : "dark";
