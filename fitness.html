@@ -1261,27 +1261,40 @@ async function handleFile(file){
 
 /* ---- Chargement par lien : Google Sheets partagé « via le lien » (ou URL CSV directe en secours).
    Transfert UNIQUE au clic — les données vivent ensuite en local (IndexedDB), aucune synchro. ---- */
-function sheetsCsvUrl(raw){
+/* Ordre d'essai : export CSV brut (valeurs telles que saisies), puis gviz en secours.
+   gviz devine UN type par colonne : une colonne Reps majoritairement numérique renvoie
+   les textes ("45s") vides, idem "PDC" dans Poids. D'où l'export en premier. */
+function sheetsCsvUrls(raw){
   const u = String(raw||"").trim();
-  if(!u) return null;
+  if(!u) return [];
   const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/);
   if(m){
     const gid = (u.match(/[#?&]gid=(\d+)/)||[])[1];
-    return "https://docs.google.com/spreadsheets/d/"+m[1]+"/gviz/tq?tqx=out:csv"+(gid ? "&gid="+gid : "");
+    const base = "https://docs.google.com/spreadsheets/d/"+m[1];
+    return [ base+"/export?format=csv"+(gid ? "&gid="+gid : ""),
+             base+"/gviz/tq?tqx=out:csv"+(gid ? "&gid="+gid : "") ];
   }
-  if(/^https?:\/\//i.test(u)) return u; // URL CSV directe
-  return null;
+  if(/^https?:\/\//i.test(u)) return [u]; // URL CSV directe
+  return [];
 }
-async function loadFromLink(raw){
-  const url = sheetsCsvUrl(raw);
-  if(!url) throw new Error("Lien non reconnu. Colle l'URL complète du Google Sheets.");
+async function fetchCsv(url){
   let res;
   try{ res = await fetch(url, {redirect:"follow"}); }
   catch(e){ throw new Error("Accès impossible. Vérifie ta connexion et que le partage du Sheet est « Tous les utilisateurs disposant du lien »."); }
   if(!res.ok) throw new Error("Le document a répondu "+res.status+". Vérifie que le partage du Sheet est « Tous les utilisateurs disposant du lien ».");
   const text = (await res.text()).replace(/^\uFEFF/, ""); // strip BOM éventuel
   if(/<html/i.test(text.slice(0,500))) throw new Error("Ce lien renvoie une page web, pas des données. Vérifie le partage du Sheet (« Tous les utilisateurs disposant du lien »).");
-  await applyWorkbook(XLSX.read(text, {type:"string"}));
+  return text;
+}
+async function loadFromLink(raw){
+  const urls = sheetsCsvUrls(raw);
+  if(!urls.length) throw new Error("Lien non reconnu. Colle l'URL complète du Google Sheets.");
+  let text = null, err = null;
+  for(const url of urls){
+    try{ text = await fetchCsv(url); break; }catch(e){ err = e; }
+  }
+  if(text===null) throw err;
+  await applyWorkbook(XLSX.read(text, {type:"string", raw:true}));
 }
 
 /* ---------- Progress helpers ---------- */
