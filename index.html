@@ -691,6 +691,12 @@
   .lm-open:hover{border-color:var(--neon)}
 
   /* ====== Skip (série/exercice passé : compté complété, non réalisé) ====== */
+  /* Série chronométrée (ex. planche 45s) : la durée remplace le poids, bouton play = chrono d'effort */
+  .setrow .setdata .sd-w.tdur{font-variant-numeric:tabular-nums}
+  .setrow .sd-go{flex:none; width:40px; height:40px; border-radius:50%; border:1.5px solid var(--neon); cursor:pointer;
+    background:color-mix(in srgb, var(--neon) 14%, transparent); color:var(--accent); display:flex; align-items:center; justify-content:center; padding:0}
+  .setrow .sd-go svg{width:16px; height:16px; fill:currentColor; margin-left:2px}
+  .setrow .sd-go:hover{background:color-mix(in srgb, var(--neon) 24%, transparent)}
   .setrow .sd-skip{flex:none; font:inherit; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
     color:var(--muted); background:none; border:1px solid var(--outline-variant); border-radius:999px;
     padding:5px 10px; cursor:pointer; transition:color .15s, border-color .15s, background .15s}
@@ -893,7 +899,7 @@
 <!-- TIMER overlay -->
 <div id="timer" class="timer hidden">
   <div class="rst-head">
-    <span class="rst-pill">Repos</span>
+    <span class="rst-pill" id="rstPill">Repos</span>
     <h2 class="rst-title" id="rstTitle">Récupération</h2>
     <p class="rst-sub" id="rstSub">Reprends ton souffle</p>
   </div>
@@ -1349,6 +1355,16 @@ function setWeightAll(ex, val){ // édite TOUT l'exercice
   state.progress[ex.key] = p;
 }
 /* ---- Reps éditables (override par série / par exercice) ---- */
+/* Durée d'une série chronométrée : "45s", "45 s", "45 sec", "45"", "1min30", "1:30" -> secondes ; sinon 0 */
+function parseDur(v){
+  const t=String(v==null?"":v).trim().toLowerCase();
+  let m;
+  if((m=t.match(/^(\d+)\s*(s|sec|secs|seconde|secondes|")$/))) return parseInt(m[1],10);
+  if((m=t.match(/^(\d+)\s*(min|mn|m)\s*(\d+)?\s*(s|sec)?$/))) return parseInt(m[1],10)*60+(parseInt(m[3]||"0",10));
+  if((m=t.match(/^(\d+):(\d{2})$/))) return parseInt(m[1],10)*60+parseInt(m[2],10);
+  return 0;
+}
+function fmtDur(sec){ return sec>=60 ? (Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0")) : (sec+" s"); }
 function getReps(ex){ // string[] longueur ex.sets ; retombe sur les reps du programme
   const base = ex.reps ? String(ex.reps) : "";
   const p = state.progress[ex.key];
@@ -1771,11 +1787,12 @@ function showExercise(sess, i){
   const hWgt  = hintBits(editRec(sess,ex,"weight", exWeightLabel(ex), curWi), "weight");
   const hRst  = hintBits(editRec(sess,ex,"repos", ex.repos, curWi), "repos");
   const hRpe  = hintBits(editRec(sess,ex,"rpe", getExRpe(ex), curWi), "rpe");
+  const timedEx = parseDur(ex.reps)>0;
   $("exMeta").innerHTML =
     "<div class='exinfo'><div class='r redit"+hSets.cls+"' id='exEditSets'"+(hSets.attr||" title='Modifier le nombre de séries'")+"><span class='k'>Séries</span><span class='v'>"+ex.sets+"<span class='pen'>&#9998;</span></span></div>"
-    +"<div class='r redit"+hReps.cls+"' id='exEditReps'"+(hReps.attr||" title='Modifier les répétitions de tout l&#8217;exercice'")+"><span class='k'>Reps</span><span class='v'>"+esc(ex.reps||"?")+"<span class='pen'>&#9998;</span></span></div></div>"
-    +"<div class='exmeta2'><button type='button' class='exwedit"+hWgt.cls+"'"+(hWgt.attr||" title=\"Modifier le poids de tout l'exercice\"")+">"
-      +(exWeightLabel(ex)?(esc(exWeightLabel(ex))+" kg"):"+ poids")+" <span class='pen'>&#9998;</span></button>"
+    +"<div class='r redit"+hReps.cls+"' id='exEditReps'"+(hReps.attr||" title='Modifier les répétitions de tout l&#8217;exercice'")+"><span class='k'>"+(timedEx?"Durée":"Reps")+"</span><span class='v'>"+esc(ex.reps||"?")+"<span class='pen'>&#9998;</span></span></div></div>"
+    +"<div class='exmeta2'>"+(timedEx?"":("<button type='button' class='exwedit"+hWgt.cls+"'"+(hWgt.attr||" title=\"Modifier le poids de tout l'exercice\"")+">"
+      +(exWeightLabel(ex)?(esc(exWeightLabel(ex))+" kg"):"+ poids")+" <span class='pen'>&#9998;</span></button>"))
     +"<button type='button' class='exwedit tedit"+hRst.cls+"'"+(hRst.attr||" title='Modifier le temps de repos'")+">Repos "+(ex.repos!=null?ex.repos+" s":"—")+" <span class='pen'>&#9998;</span></button>"
     +(ex.rpe?("<span>RPE "+esc(ex.rpe)+"</span>"):"")
     +"<button type='button' class='exwedit rpedit"+hRpe.cls+"'"+(hRpe.attr||" title='RPE ressenti du bloc (1-10)'")+">"+(getExRpe(ex)?("Ressenti "+esc(getExRpe(ex))):"+ Ressenti")+" <span class='pen'>&#9998;</span></button></div>";
@@ -1792,6 +1809,20 @@ function showExercise(sess, i){
     const w = weights[si];
     const hsw = hintBits(editRec(sess,ex,"weight", w, curWi), "weight");
     const hsr = hintBits(editRec(sess,ex,"reps", reps[si], curWi), "reps");
+    const dur = parseDur(reps[si]);
+    if(dur>0){
+      r.innerHTML = "<span class='setno'>"+(si+1)+"</span>"
+        +"<div class='setdata'><button type='button' class='sd-w wedit tdur"+hsr.cls+"'"+(hsr.attr||" title='Modifier la durée de cette série'")+">"+fmtDur(dur)+" <span class='pen'>&#9998;</span></button></div>"
+        +"<button type='button' class='sd-go' title='Lancer le chrono ("+fmtDur(dur)+")' aria-label='Lancer le chrono'>"+SVG_PLAY+"</button>"
+        +"<button type='button' class='sd-skip' title='"+(skipped?"Annuler le skip (remettre à blanc)":"Passer cette série : comptée comme complétée, non réalisée")+"'>Skip</button>"
+        +"<span class='cb'>"+(on===true?"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12l5 5 9-11'/></svg>":"")+(skipped?SKIP_SVG:"")+"</span>";
+      r.onclick = ()=> toggleSet(sess, i, si);
+      r.querySelector(".tdur").onclick = (e)=>{ e.stopPropagation(); editSeriesReps(sess, i, si); };
+      r.querySelector(".sd-go").onclick = (e)=>{ e.stopPropagation(); startWorkTimer(sess, i, si, dur); };
+      r.querySelector(".sd-skip").onclick = (e)=>{ e.stopPropagation(); toggleSkipSet(sess, i, si); };
+      list.appendChild(r);
+      return;
+    }
     r.innerHTML = "<span class='setno'>"+(si+1)+"</span>"
       +"<div class='setdata'><button type='button' class='sd-w wedit"+hsw.cls+"'"+(hsw.attr||" title='Modifier le poids de cette série'")+">"+(w?esc(w)+" kg":"+ poids")+" <span class='pen'>&#9998;</span></button>"
       +"<button type='button' class='sd-r redit"+hsr.cls+"'"+(hsr.attr||" title='Modifier les reps de cette série'")+">"+esc(reps[si]||"?")+" reps <span class='pen'>&#9998;</span></button></div>"
@@ -1826,7 +1857,7 @@ async function toggleSet(sess, i, si){
       const total=arr.length, done=arr.filter(Boolean).length, nextN=Math.min(done+1,total), last=done>=total;
       startTimer(ex.repos, {
         title: ex.exercice || "Récupération",
-        sub: last ? "Dernière série terminée — bravo" : ("Série "+nextN+" / "+total + (ex.reps?(" · "+ex.reps+" reps"):""))
+        sub: last ? "Dernière série terminée — bravo" : ("Série "+nextN+" / "+total + (ex.reps?(" · "+(parseDur(ex.reps)>0 ? fmtDur(parseDur(ex.reps)) : ex.reps+" reps")):""))
       });
     }
     if(exDone(ex) && !getExRpe(ex)){ // bloc terminé => saisie du RPE (le repos défile pendant)
@@ -1878,10 +1909,15 @@ async function editExerciseRpe(sess, i){
 async function editSeriesReps(sess, i, si){
   const ex = sess.exercises[i];
   const cur = getReps(ex)[si] || "";
-  const v = prompt("Reps — série "+(si+1)+" de « "+ex.exercice+" »\nLaisse vide pour revenir aux reps programme :"+hintNote(sess,ex,"reps"), cur);
+  const timed = parseDur(cur)>0;
+  const v = timed
+    ? prompt("Durée — série "+(si+1)+" de « "+ex.exercice+" » (secondes, ex. 45)\nLaisse vide pour revenir à la durée programme :"+hintNote(sess,ex,"reps"), String(parseDur(cur)))
+    : prompt("Reps — série "+(si+1)+" de « "+ex.exercice+" »\nLaisse vide pour revenir aux reps programme :"+hintNote(sess,ex,"reps"), cur);
   if(v===null) return;
-  setRep(ex, si, v.trim());
-  recordEdit(sess, ex, "reps", v.trim());
+  let nv = v.trim();
+  if(timed && /^\d+$/.test(nv)) nv = nv+"s";   // "50" => "50s" : la série reste chronométrée
+  setRep(ex, si, nv);
+  recordEdit(sess, ex, "reps", nv);
   await persist();
   showExercise(sess, i);
 }
@@ -1982,7 +2018,7 @@ function paintSessClock(){
 }
 
 /* ---------- Timer de repos ---------- */
-let timer = {dur:0, left:0, running:false, h:null};
+let timer = {dur:0, left:0, running:false, h:null, mode:"rest", onDone:null, gen:0};
 const RST_C = 283; // circonférence de l'anneau (2·π·45)
 const SVG_PAUSE = "<svg viewBox='0 0 24 24'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>";
 const SVG_PLAY  = "<svg viewBox='0 0 24 24'><path d='M7 5l12 7-12 7z'/></svg>";
@@ -1995,7 +2031,10 @@ function paintTimer(){
 }
 function startTimer(sec, ctx){
   stopTick();
-  timer.dur=sec; timer.left=sec; timer.running=true;
+  timer.dur=sec; timer.left=sec; timer.running=true; timer.gen++;
+  timer.mode = (ctx && ctx.mode) || "rest"; timer.onDone = (ctx && ctx.onDone) || null;
+  $("rstPill").textContent = timer.mode==="work" ? "Effort" : "Repos";
+  $("tSkip").firstChild.nodeValue = timer.mode==="work" ? "Terminer la série" : "Passer à la série suivante";
   timer.endAt = Date.now() + sec*1000;      // échéance absolue (résiste au throttling)
   ensureAudio();                            // débloque l'audio pendant le geste utilisateur
   if(ctx){ $("rstTitle").textContent = ctx.title; $("rstSub").textContent = ctx.sub; }
@@ -2019,7 +2058,18 @@ function timerDone(){
   if(navigator.vibrate) try{ navigator.vibrate([200,100,200]); }catch(e){}
   beep();
   const t=$("timer"); t.classList.add("flash"); setTimeout(()=>t.classList.remove("flash"),2200);
-  setTimeout(closeTimer, 1400);
+  const g=timer.gen, cb=timer.onDone; timer.onDone=null;
+  setTimeout(()=>{ if(timer.gen!==g) return; closeTimer(); if(cb) cb(); }, 1400);
+}
+/* Chrono d'effort d'une série chronométrée : à la fin, la série est cochée (=> le repos démarre) */
+function startWorkTimer(sess, i, si, sec){
+  const ex = sess.exercises[i];
+  startTimer(sec, {
+    mode:"work",
+    title: ex.exercice || "Effort",
+    sub: "Série "+(si+1)+" / "+ex.sets+" · "+fmtDur(sec),
+    onDone: ()=>{ if(getSets(ex)[si]!==true) toggleSet(sess, i, si); }
+  });
 }
 /* Cloche fiable : contexte audio PARTAGÉ, débloqué au premier geste utilisateur.
    (Un AudioContext créé hors geste démarre "suspended" sur mobile -> silence.) */
@@ -2111,7 +2161,10 @@ $("tPause").onclick = ()=>{ timer.running=!timer.running; if(timer.running){ tim
 $("tPlus").onclick = ()=>{ timer.left+=15; if(timer.left>timer.dur) timer.dur=timer.left; timer.endAt=Date.now()+timer.left*1000; paintTimer(); };
 $("tMinus").onclick = ()=>{ timer.left=Math.max(0,timer.left-15); timer.endAt=Date.now()+timer.left*1000; paintTimer(); };
 $("tReset").onclick = ()=>{ timer.left=timer.dur; timer.running=true; timer.endAt=Date.now()+timer.dur*1000; setPauseBtn(true); paintTimer(); };
-$("tSkip").onclick = ()=> _back();
+$("tSkip").onclick = ()=>{
+  if(timer.mode==="work"){ const cb=timer.onDone; timer.onDone=null; closeTimer(); if(cb) cb(); return; } // fin anticipée de l'effort
+  _back();
+};
 $("rpeSkip").onclick = ()=> closeRpeModal(null);
 $("rpeModal").addEventListener("click", (e)=>{ if(e.target.id==="rpeModal") closeRpeModal(null); });
 $("linkModal").addEventListener("click", (e)=>{ if(e.target.id==="linkModal") $("lmCancel").click(); });
